@@ -28,22 +28,31 @@ dba-playbook 是个人 DBA 知识库：沉淀数据库知识与真实场景处�
 
 ## 文档通用规范
 
-- **命名**：路径英文小写 + 短横线；案例文件 `YYYY-MM-DD-<slug>.md`；文件名不超过 5 个词；中文标题写在文内 H1。
-- **Front matter**：`docs/` 与 `cases/` 的文档必须带，字段见 `templates/` 对应模板。
-- **代码块**：标注语言；命令块说明执行位置（哪台主机、哪个实例/库）；输出只贴关键片段。
-- **正文**：中文为主，技术名词保留英文；一篇一个主题；交叉引用用相对链接。
-- **索引**：新增/删除/改名文档后，同步更新所在目录 `README.md` 索引表；新增板块时更新根 `README.md` 知识地图。
+- **格式**：内容文档以 **HTML** 存放（仓库即站点，浏览器直接可读）；`README.md`、各级 `AGENTS.md`、`CONTRIBUTING.md`、`templates/*.md` 保留 Markdown，作为索引与规范。
+- **命名**：路径英文小写 + 短横线；案例文件 `YYYY-MM-DD-<slug>.html`；文件名不超过 5 个词；中文标题写在 `<h1>`。
+- **元信息块**：`docs/` 与 `cases/` 的文档必须带（`<head>` 内 `<meta name="..." content="...">`，`database` / `status` 必填），字段见 `templates/` 对应模板。
+- **代码块**：`<pre><code class="language-sql">` 标注语言；Mermaid 图先写 `<pre class="mermaid">`，定稿后运行 `python scripts/site/render-diagrams.py` 预渲染为内嵌 SVG（Obsidian 等静态查看器也能显示）；命令块说明执行位置（哪台主机、哪个实例/库）；输出只贴关键片段。
+- **正文**：中文为主，技术名词保留英文；一篇一个主题；交叉引用用相对链接（内容文档间指向 `.html`）；资源与链接**禁止根路径**（如 `/assets/...`，GitHub Pages 子路径下会断），一律相对路径。
+- **索引**：新增/删除/改名文档后，同步更新所在目录 `README.md` 索引表（内容文档链接指向 `.html`）；新增板块时更新根 `README.md` 知识地图。
+- **站点生成物**：内容增删改后运行 `python scripts/site/build.py` 刷新导航/搜索索引/目录页（`index.html`、`assets/site/nav.js` 等，均带 AUTO-GENERATED 标记，勿手改），与内容一并提交。
+
+## 本地站点与发布
+
+内容文档即站点：`powershell -File scripts/site/serve.ps1` 本地预览；push 到 `main` 由 GitHub Actions 发布到 GitHub Pages。
+工具用法与页面规范见 `scripts/site/README.md`。
 
 ## 标准工作流
 
 1. 读本文件与目标目录的 `AGENTS.md`（如 `cases/AGENTS.md`）。
-2. 用 `templates/` 中对应模板起步。
+2. 用 `python scripts/site/new-doc.py` 创建文档（或复制 `templates/` 对应 HTML 模板）。
 3. 写完自检：
    - [ ] 脱敏检查（红线 1）
    - [ ] 版本标注（红线 3）
-   - [ ] front matter 完整
-   - [ ] 相对链接可解析
+   - [ ] 元信息块完整（`database` / `status` 必填）
+   - [ ] Mermaid 图已预渲染（含图文档：`python scripts/site/render-diagrams.py`）
+   - [ ] 相对链接可解析（`python scripts/site/build.py --check` 可自动校验）
    - [ ] 所在目录 README 索引已更新
+   - [ ] `python scripts/site/build.py` 生成物已刷新并提交
 4. 提交信息用 Conventional Commits：`docs(mysql): ...`、`cases(redis): ...`、`runbooks: ...`、`scripts(shell): ...`、`chore: ...`。
 
 ## 子级 AGENTS.md

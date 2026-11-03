@@ -22,6 +22,7 @@ Thumbs.db
 desktop.ini
 .vscode/
 .idea/
+.obsidian/
 *.swp
 *.swo
 
@@ -30,3 +31,8 @@ desktop.ini
 tmp/
 temp/
 .cache/
+
+# ── 站点构建产物（发布目录；生成物 index.html / nav.js 等仍入库） ──
+_site/
+__pycache__/
+*.pyc

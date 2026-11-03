@@ -10,6 +10,7 @@
 | `redis/` | Redis 分析与治理脚本 |
 | `shell/` | 通用 Shell 脚本（巡检、清理、校验） |
 | `python/` | 通用 Python 脚本（采集、报表、自动化） |
+| `site/` | 站点工具（构建、预览、发布；仅标准库，要求见 `site/README.md`） |
 
 跨数据库工具放 `shell/` 或 `python/`。每个脚本在所在目录 `README.md` 索引登记一行。
 

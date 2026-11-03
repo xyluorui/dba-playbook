@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MySQL 总览：一条 SQL 的旅程 | DBA Playbook</title>
+<meta name="database" content="MySQL">
+<meta name="category" content="架构">
+<meta name="tags" content="架构, 参数">
+<meta name="date" content="2026-11-03">
+<meta name="status" content="draft">
+<!-- fallback-style:start（同步工具：scripts/site/sync-shell.py；样式源：scripts/site/theme.css） -->
+<script>document.documentElement.className += " js";</script>
+<style>
+/* 静态主题：外部 CSS/JS 不可用时（如 Obsidian HTML 插件）保证阅读版式 */
+:root {
+  --bg: #f6f7f9; --panel: #ffffff; --text: #1f2329; --muted: #646a73;
+  --accent: #2563eb; --accent-soft: #eaf0fe; --border: #e4e7ed;
+  --code-bg: #f3f5f8; --pre-bg: #1f2430; --pre-text: #dce1e8;
+  --warn: #b45309; --ok: #15803d; --shadow: 0 1px 3px rgba(15, 23, 42, .08);
+  color-scheme: light dark;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0f141a; --panel: #161d25; --text: #d7dde4; --muted: #8b949e;
+    --accent: #6ea8fe; --accent-soft: #1b2a41; --border: #2a3340;
+    --code-bg: #1c242e; --pre-bg: #10161d; --pre-text: #cdd7e1;
+    --warn: #f0b429; --ok: #4ade80; --shadow: none;
+  }
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--panel); color: var(--text);
+  font: 16px/1.75 -apple-system, "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+  overflow-wrap: break-word;
+}
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.site-header, .sidebar, .nav-toggle { display: none; }
+.skip-link { position: absolute; left: -999px; top: .5rem; z-index: 100; }
+.skip-link:focus { left: .5rem; padding: .35rem .8rem; border-radius: .4rem; background: var(--panel); border: 1px solid var(--accent); }
+.layout, main { display: block; }
+.content { max-width: 52rem; margin: 0 auto; padding: 1.6rem 1.5rem 3rem; }
+.crumb { font-size: .82rem; color: var(--muted); margin-bottom: .9rem; }
+.crumb span { color: var(--text); }
+.meta { display: flex; flex-wrap: wrap; gap: .42rem; margin: .35rem 0 1.2rem; }
+.badge {
+  display: inline-flex; align-items: center; font-size: .74rem; line-height: 1.6;
+  padding: .05rem .6rem; border-radius: 1rem; border: 1px solid var(--border);
+  color: var(--muted); background: var(--panel);
+}
+.badge.db { color: var(--accent); border-color: var(--accent); background: var(--accent-soft); font-weight: 600; }
+.badge.cat { color: var(--warn); border-color: currentColor; }
+.badge.status-draft { color: var(--warn); border-color: currentColor; font-weight: 600; }
+.badge.status-stable, .badge.status-done { color: var(--ok); border-color: currentColor; }
+.chip { display: inline-block; font-size: .72rem; padding: 0 .5rem; margin-left: .45rem; border-radius: 1rem; background: var(--accent-soft); color: var(--accent); }
+.content .toc-inline { margin: 0 0 1.6rem; border: 1px solid var(--border); border-radius: .6rem; background: var(--bg); font-size: .86rem; }
+.content .toc-inline summary { cursor: pointer; padding: .45rem .95rem; font-weight: 600; }
+.content .toc-inline ul { list-style: none; margin: 0; padding: .1rem .95rem .7rem; columns: 2 16rem; column-gap: 1.6rem; }
+.content .toc-inline li { margin: 0; padding: .08rem 0; line-height: 1.5; break-inside: avoid; }
+.content .toc-inline li.h3 { padding-left: 1rem; font-size: .82rem; }
+.content .toc-inline a { color: var(--muted); }
+.content .toc-inline a:hover { color: var(--accent); }
+.content h1 { font-size: 1.95rem; line-height: 1.4; margin: .2rem 0 .7rem; letter-spacing: .01em; }
+.content h2 { font-size: 1.4rem; margin: 2.5rem 0 1rem; padding-bottom: .35rem; border-bottom: 2px solid var(--border); }
+.content h3 { font-size: 1.14rem; margin: 1.9rem 0 .7rem; padding-left: .65rem; border-left: 3px solid var(--accent); line-height: 1.5; }
+.content h4 { font-size: 1rem; margin: 1.4rem 0 .55rem; }
+.content p { margin: .8rem 0; }
+.content ul, .content ol { padding-left: 1.6rem; margin: .8rem 0; }
+.content li { margin: .3rem 0; }
+.content li::marker { color: var(--muted); }
+.content hr { border: 0; border-top: 1px solid var(--border); margin: 2.2rem 0; }
+.content strong { font-weight: 650; }
+.content blockquote {
+  margin: 1.2rem 0; padding: .75rem 1.2rem; border-left: 4px solid var(--accent);
+  background: var(--accent-soft); border-radius: 0 .6rem .6rem 0;
+}
+.content blockquote p { margin: .35rem 0; }
+.content blockquote p:first-child { margin-top: 0; }
+.content blockquote p:last-child { margin-bottom: 0; }
+.content code {
+  font-family: "JetBrains Mono", Consolas, Menlo, monospace; font-size: .85em;
+  background: var(--code-bg); border: 1px solid var(--border);
+  padding: .08em .38em; border-radius: .35rem; word-break: break-word;
+}
+.content pre {
+  background: var(--pre-bg); color: var(--pre-text); border-radius: .7rem;
+  padding: 1rem 1.25rem; overflow-x: auto; font-size: .85rem; line-height: 1.65; margin: 1.1rem 0;
+  tab-size: 4;
+}
+.content pre code { background: none; border: 0; padding: 0; color: inherit; font-size: 1em; word-break: normal; }
+.content pre.mermaid { background: #fff; color: #333; text-align: center; }
+.content .diagram {
+  overflow-x: auto; margin: 1.3rem 0; padding: .9rem; text-align: center;
+  background: #fff; border: 1px solid var(--border); border-radius: .7rem;
+}
+.content .diagram svg { max-width: 100%; height: auto; }
+.table-wrap { overflow-x: auto; margin: 1.2rem 0; border: 1px solid var(--border); border-radius: .7rem; }
+.content table { border-collapse: collapse; width: 100%; font-size: .9rem; }
+.content th, .content td { padding: .5rem .8rem; text-align: left; vertical-align: top; border-bottom: 1px solid var(--border); }
+.content th { background: var(--code-bg); font-weight: 650; white-space: nowrap; }
+.content tbody tr:nth-child(even) td { background: color-mix(in srgb, var(--code-bg) 55%, transparent); }
+.content tbody tr:last-child td { border-bottom: 0; }
+.content td code { white-space: nowrap; }
+.content img { max-width: 100%; border-radius: .5rem; }
+.hero { text-align: center; padding: 2.4rem 0 1rem; }
+.hero h1 { font-size: 2.35rem; margin: 0 0 .75rem; }
+.tagline { color: var(--muted); font-size: 1.05rem; margin: 0 auto; max-width: 42rem; }
+.hero-links { margin-top: 1.5rem; }
+.btn { display: inline-block; padding: .52rem 1.25rem; border-radius: .55rem; background: var(--accent); color: #fff; font-weight: 600; margin: 0 .35rem; }
+.btn:hover { text-decoration: none; filter: brightness(1.08); }
+.btn.ghost { background: var(--panel); color: var(--accent); border: 1px solid var(--accent); }
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 1rem; margin: 1.1rem 0 2rem; }
+.card { display: block; padding: 1.1rem 1.3rem; background: var(--panel); border: 1px solid var(--border); border-radius: .75rem; color: var(--text); box-shadow: var(--shadow); }
+.card:hover { text-decoration: none; border-color: var(--accent); }
+.card h3 { margin: 0 0 .45rem; font-size: 1.05rem; padding: 0; border: 0; }
+.card p { margin: 0; font-size: .85rem; color: var(--muted); }
+.recent { list-style: none; padding-left: 0; }
+.recent li { padding: .32rem 0; border-bottom: 1px dashed var(--border); }
+.recent .date { font-family: Consolas, monospace; font-size: .8rem; color: var(--muted); margin-right: .6rem; }
+.auto-list { padding-left: 1.2rem; }
+.site-footer { text-align: center; color: var(--muted); font-size: .8rem; padding: 1.4rem 1rem 2rem; border-top: 1px solid var(--border); }
+@media (max-width: 640px) {
+  .content { padding: 1.1rem 1rem 2.5rem; }
+  .content h1 { font-size: 1.55rem; }
+}
+@media print {
+  .toc-inline > summary { display: none; }
+  .content { max-width: none; padding: 0; }
+  .content pre { white-space: pre-wrap; }
+}
+.hljs-keyword, .hljs-selector-tag, .hljs-doctag { color: #c678dd; }
+.hljs-string, .hljs-attr, .hljs-regexp { color: #98c379; }
+.hljs-number, .hljs-literal, .hljs-symbol { color: #d19a66; }
+.hljs-comment, .hljs-quote { color: #7f8c98; font-style: italic; }
+.hljs-title, .hljs-function, .hljs-section { color: #61afef; }
+.hljs-built_in, .hljs-type { color: #e6c07b; }
+.hljs-variable, .hljs-template-variable, .hljs-name { color: #e06c75; }
+.hljs-meta { color: #56b6c2; }
+</style>
+<!-- fallback-style:end -->
+<link rel="stylesheet" href="../../../assets/site/site.css">
+</head>
+<body data-root="../../../">
+<!-- shell:top:start（同步工具：scripts/site/sync-shell.py） -->
+<a class="skip-link" href="#main">跳到正文</a>
+<header class="site-header">
+  <button class="nav-toggle" id="nav-toggle" type="button" aria-label="打开目录" aria-controls="sidebar" aria-expanded="false">☰</button>
+  <a class="brand" href="../../../index.html">DBA Playbook</a>
+  <div class="search" id="search-box" role="search"></div>
+</header>
+<div class="layout">
+  <nav class="sidebar" id="sidebar" aria-label="站点目录"></nav>
+  <main id="main">
+<!-- shell:top:end -->
+    <article class="content">
+      <h1>MySQL 总览：一条 SQL 的旅程</h1>
+<!-- page-head:start（同步工具：scripts/site/sync-shell.py） -->
+<p class="meta"><span class="badge db">MySQL</span><span class="badge cat">架构</span><span class="badge">架构</span><span class="badge">参数</span><span class="badge">2026-11-03</span><span class="badge status-draft">draft</span></p>
+<nav class="toc-inline" aria-label="本文目录"><details><summary>本文目录（13 节）</summary>
+<ul>
+<li class="h2"><a href="#sec-1">1. 一张图看全局</a></li>
+<li class="h2"><a href="#sec-2">2. 各层职责</a></li>
+<li class="h3"><a href="#sec-3">2.1 连接层</a></li>
+<li class="h3"><a href="#sec-4">2.2 SQL 层（Server）</a></li>
+<li class="h3"><a href="#sec-5">2.3 存储引擎层</a></li>
+<li class="h3"><a href="#sec-6">2.4 文件层（8.0 datadir 里的主要文件）</a></li>
+<li class="h2"><a href="#sec-7">3. 谁在 Server 层，谁在引擎层</a></li>
+<li class="h2"><a href="#sec-8">4. 一条 SELECT 的旅程</a></li>
+<li class="h2"><a href="#sec-9">5. 一条 UPDATE 的旅程（预览）</a></li>
+<li class="h2"><a href="#sec-10">6. 8.0 与 5.7 的主要差异（总览级）</a></li>
+<li class="h2"><a href="#sec-11">7. 常见面试题</a></li>
+<li class="h2"><a href="#sec-12">8. 本章小结</a></li>
+<li class="h2"><a href="#sec-13">相关内容</a></li>
+</ul></details></nav>
+<!-- page-head:end -->
+      <blockquote>
+      <p>适用：MySQL 8.0.x（与 5.7 的差异单独标注）。知识地图见 <a href="../overview.html">MySQL 知识总览</a>。</p>
+      <p>目标：看完能画出 MySQL 的分层架构，说清一条 SELECT / UPDATE 从进来到出去经过了哪些组件，以及每个组件的职责边界。</p>
+      </blockquote>
+      <h2 id="sec-1">1. 一张图看全局</h2>
+      <!-- mermaid
+flowchart TD
+          C["客户端 / 驱动 / 连接池"] --&gt; CONN
+      
+          subgraph SERVER["Server 层（mysqld，与引擎无关）"]
+              direction TB
+              CONN["连接层<br/>连接管理 · 认证 · 线程 · SSL"]
+              PARSER["解析器<br/>词法 / 语法分析 → AST"]
+              RESOLVE["预处理<br/>名字解析 · 权限检查"]
+              OPT["优化器<br/>基于成本选索引 / Join 顺序"]
+              EXEC["执行器<br/>调用引擎接口 · 返回结果"]
+              CONN --&gt; PARSER --&gt; RESOLVE --&gt; OPT --&gt; EXEC
+          end
+      
+          EXEC --&gt;|"Handler API"| ENGINE
+      
+          subgraph ENGINES["存储引擎层（插件式）"]
+              ENGINE["InnoDB（默认）/ MyISAM / Memory …"]
+          end
+      
+          ENGINE --&gt; FILES["文件层<br/>表空间 · redo · undo · binlog · 日志"]
+-->
+<div class="diagram">
+<svg id="dg-648b9ba6" width="100%" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" class="flowchart" style="max-width: 237.891px; background-color: transparent;" viewBox="0 4 237.890625 1173" role="graphics-document document" aria-roledescription="flowchart-v2"><style>#dg-648b9ba6{font-family:trebuchet ms,verdana,arial,sans-serif;font-size:14px;fill:#333;}@keyframes edge-animation-frame{from{stroke-dashoffset:0;}}@keyframes dash{to{stroke-dashoffset:0;}}#dg-648b9ba6 .edge-animation-slow{stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 50s linear infinite;stroke-linecap:round;}#dg-648b9ba6 .edge-animation-fast{stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 20s linear infinite;stroke-linecap:round;}#dg-648b9ba6 .error-icon{fill:#552222;}#dg-648b9ba6 .error-text{fill:#552222;stroke:#552222;}#dg-648b9ba6 .edge-thickness-normal{stroke-width:1px;}#dg-648b9ba6 .edge-thickness-thick{stroke-width:3.5px;}#dg-648b9ba6 .edge-pattern-solid{stroke-dasharray:0;}#dg-648b9ba6 .edge-thickness-invisible{stroke-width:0;fill:none;}#dg-648b9ba6 .edge-pattern-dashed{stroke-dasharray:3;}#dg-648b9ba6 .edge-pattern-dotted{stroke-dasharray:2;}#dg-648b9ba6 .marker{fill:#333333;stroke:#333333;}#dg-648b9ba6 .marker.cross{stroke:#333333;}#dg-648b9ba6 svg{font-family:trebuchet ms,verdana,arial,sans-serif;font-size:14px;}#dg-648b9ba6 p{margin:0;}#dg-648b9ba6 .label{font-family:trebuchet ms,verdana,arial,sans-serif;color:#333;}#dg-648b9ba6 .cluster-label text{fill:#333;}#dg-648b9ba6 .cluster-label span{color:#333;}#dg-648b9ba6 .cluster-label span p{background-color:transparent;}#dg-648b9ba6 .label text,#dg-648b9ba6 span{fill:#333;color:#333;}#dg-648b9ba6 .node rect,#dg-648b9ba6 .node circle,#dg-648b9ba6 .node ellipse,#dg-648b9ba6 .node polygon,#dg-648b9ba6 .node path{fill:#ECECFF;stroke:#9370DB;stroke-width:1px;}#dg-648b9ba6 .rough-node .label text,#dg-648b9ba6 .node .label text,#dg-648b9ba6 .image-shape .label,#dg-648b9ba6 .icon-shape .label{text-anchor:middle;}#dg-648b9ba6 .node .katex path{fill:#000;stroke:#000;stroke-width:1px;}#dg-648b9ba6 .rough-node .label,#dg-648b9ba6 .node .label,#dg-648b9ba6 .image-shape .label,#dg-648b9ba6 .icon-shape .label{text-align:center;}#dg-648b9ba6 .node.clickable{cursor:pointer;}#dg-648b9ba6 .root .anchor path{fill:#333333!important;stroke-width:0;stroke:#333333;}#dg-648b9ba6 .arrowheadPath{fill:#333333;}#dg-648b9ba6 .edgePaths .path{stroke:#333333;stroke-width:1px;}#dg-648b9ba6 .flowchart-link{stroke:#333333;fill:none;}#dg-648b9ba6 .edgeLabel{background-color:rgba(232,232,232, 0.8);text-align:center;}#dg-648b9ba6 .edgeLabel p{background-color:rgba(232,232,232, 0.8);}#dg-648b9ba6 .edgeLabel rect{opacity:0.5;background-color:rgba(232,232,232, 0.8);fill:rgba(232,232,232, 0.8);}#dg-648b9ba6 .labelBkg{background-color:rgba(232, 232, 232, 0.5);}#dg-648b9ba6 .cluster rect{fill:#ffffde;stroke:#aaaa33;stroke-width:1px;}#dg-648b9ba6 .cluster text{fill:#333;}#dg-648b9ba6 .cluster span{color:#333;}#dg-648b9ba6 .node .collapsed-indicator{fill:#aaaa33;stroke:none;opacity:0.6;}#dg-648b9ba6 .node .collapsed-separator{stroke:#aaaa33;stroke-width:0.75px;}#dg-648b9ba6 div.mermaidTooltip{position:absolute;text-align:center;max-width:200px;padding:2px;font-family:trebuchet ms,verdana,arial,sans-serif;font-size:12px;background:hsl(80, 100%, 96.2745098039%);border:1px solid #aaaa33;border-radius:2px;pointer-events:none;z-index:100;}#dg-648b9ba6 .flowchartTitleText{text-anchor:middle;font-size:18px;fill:#333;}#dg-648b9ba6 rect.text{fill:none;stroke-width:0;}#dg-648b9ba6 .icon-shape,#dg-648b9ba6 .image-shape{background-color:rgba(232,232,232, 0.8);text-align:center;}#dg-648b9ba6 .icon-shape p,#dg-648b9ba6 .image-shape p{background-color:rgba(232,232,232, 0.8);padding:2px;}#dg-648b9ba6 .icon-shape .label rect,#dg-648b9ba6 .image-shape .label rect{opacity:0.5;background-color:rgba(232,232,232, 0.8);fill:rgba(232,232,232, 0.8);}#dg-648b9ba6 .label-icon{display:inline-block;height:1em;overflow:visible;vertical-align:-0.125em;}#dg-648b9ba6 .node .label-icon path{fill:currentColor;stroke:revert;stroke-width:revert;}#dg-648b9ba6 .node .neo-node{stroke:#9370DB;}#dg-648b9ba6 [data-look="neo"].node rect,#dg-648b9ba6 [data-look="neo"].cluster rect,#dg-648b9ba6 [data-look="neo"].node polygon{stroke:#9370DB;filter:drop-shadow(1px 2px 2px rgba(185, 185, 185, 1));}#dg-648b9ba6 [data-look="neo"].swimlane.cluster rect{filter:none;}#dg-648b9ba6 [data-look="neo"].node path{stroke:#9370DB;stroke-width:1px;}#dg-648b9ba6 [data-look="neo"].node .outer-path{filter:drop-shadow(1px 2px 2px rgba(185, 185, 185, 1));}#dg-648b9ba6 [data-look="neo"].node .neo-line path{stroke:#9370DB;filter:none;}#dg-648b9ba6 [data-look="neo"].node circle{stroke:#9370DB;filter:drop-shadow(1px 2px 2px rgba(185, 185, 185, 1));}#dg-648b9ba6 [data-look="neo"].node circle .state-start{fill:#000000;}#dg-648b9ba6 [data-look="neo"].icon-shape .icon{fill:#9370DB;filter:drop-shadow(1px 2px 2px rgba(185, 185, 185, 1));}#dg-648b9ba6 [data-look="neo"].icon-shape .icon-neo path{stroke:#9370DB;filter:drop-shadow(1px 2px 2px rgba(185, 185, 185, 1));}#dg-648b9ba6 :root{--mermaid-font-family:"trebuchet ms",verdana,arial,sans-serif;}</style><g><marker id="dg-648b9ba6_flowchart-v2-pointEnd" class="marker flowchart-v2" viewBox="0 0 10 10" refX="5" refY="5" markerUnits="userSpaceOnUse" markerWidth="8" markerHeight="8" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"/></marker><marker id="dg-648b9ba6_flowchart-v2-pointStart" class="marker flowchart-v2" viewBox="0 0 10 10" refX="4.5" refY="5" markerUnits="userSpaceOnUse" markerWidth="8" markerHeight="8" orient="auto"><path d="M 0 5 L 10 10 L 10 0 z" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"/></marker><marker id="dg-648b9ba6_flowchart-v2-pointEnd-margin" class="marker flowchart-v2" viewBox="0 0 11.5 14" refX="11.5" refY="7" markerUnits="userSpaceOnUse" markerWidth="10.5" markerHeight="14" orient="auto"><path d="M 0 0 L 11.5 7 L 0 14 z" class="arrowMarkerPath" style="stroke-width: 0; stroke-dasharray: 1, 0;"/></marker><marker id="dg-648b9ba6_flowchart-v2-pointStart-margin" class="marker flowchart-v2" viewBox="0 0 11.5 14" refX="1" refY="7" markerUnits="userSpaceOnUse" markerWidth="11.5" markerHeight="14" orient="auto"><polygon points="0,7 11.5,14 11.5,0" class="arrowMarkerPath" style="stroke-width: 0; stroke-dasharray: 1, 0;"/></marker><marker id="dg-648b9ba6_flowchart-v2-circleEnd" class="marker flowchart-v2" viewBox="0 0 10 10" refX="11" refY="5" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"/></marker><marker id="dg-648b9ba6_flowchart-v2-circleStart" class="marker flowchart-v2" viewBox="0 0 10 10" refX="-1" refY="5" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"/></marker><marker id="dg-648b9ba6_flowchart-v2-circleEnd-margin" class="marker flowchart-v2" viewBox="0 0 10 10" refY="5" refX="12.25" markerUnits="userSpaceOnUse" markerWidth="14" markerHeight="14" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 0; stroke-dasharray: 1, 0;"/></marker><marker id="dg-648b9ba6_flowchart-v2-circleStart-margin" class="marker flowchart-v2" viewBox="0 0 10 10" refX="-2" refY="5" markerUnits="userSpaceOnUse" markerWidth="14" markerHeight="14" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 0; stroke-dasharray: 1, 0;"/></marker><marker id="dg-648b9ba6_flowchart-v2-crossEnd" class="marker cross flowchart-v2" viewBox="0 0 11 11" refX="12" refY="5.2" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><path d="M 1,1 l 9,9 M 10,1 l -9,9" class="arrowMarkerPath" style="stroke-width: 2; stroke-dasharray: 1, 0;"/></marker><marker id="dg-648b9ba6_flowchart-v2-crossStart" class="marker cross flowchart-v2" viewBox="0 0 11 11" refX="-1" refY="5.2" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><path d="M 1,1 l 9,9 M 10,1 l -9,9" class="arrowMarkerPath" style="stroke-width: 2; stroke-dasharray: 1, 0;"/></marker><marker id="dg-648b9ba6_flowchart-v2-crossEnd-margin" class="marker cross flowchart-v2" viewBox="0 0 15 15" refX="17.7" refY="7.5" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto"><path d="M 1,1 L 14,14 M 1,14 L 14,1" class="arrowMarkerPath" style="stroke-width: 2.5;"/></marker><marker id="dg-648b9ba6_flowchart-v2-crossStart-margin" class="marker cross flowchart-v2" viewBox="0 0 15 15" refX="-3.5" refY="7.5" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto"><path d="M 1,1 L 14,14 M 1,14 L 14,1" class="arrowMarkerPath" style="stroke-width: 2.5; stroke-dasharray: 1, 0;"/></marker><g class="root"><g class="clusters"><g class="cluster" id="dg-648b9ba6-ENGINES" data-look="neo"><rect style="" x="18.9453125" y="852" width="200" height="159"/><g class="cluster-label" transform="translate(48.9453125, 852)"><foreignObject width="140" height="21"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table-cell; white-space: nowrap; line-height: 1.5;"><span class="nodeLabel"><p>存储引擎层（插件式）</p></span></div></foreignObject></g></g><g class="cluster" id="dg-648b9ba6-SERVER" data-look="neo"><rect style="" x="8" y="128" width="221.890625" height="603"/><g class="cluster-label" transform="translate(12, 128)"><foreignObject width="213.890625" height="21"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table-cell; white-space: nowrap; line-height: 1.5;"><span class="nodeLabel"><p>Server 层（mysqld，与引擎无关）</p></span></div></foreignObject></g></g></g><g class="edges edgePaths"><path d="M118.94531249999999,78L118.94531249999999,118L118.94531249999999,172" id="dg-648b9ba6-L_C_CONN_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style="stroke-dasharray: 0 0 90 4; stroke-dashoffset: 0;;" data-edge="true" data-et="edge" data-id="L_C_CONN_0" data-points="W3sieCI6MTE4Ljk0NTMxMjQ5OTk5OTk5LCJ5Ijo3OH0seyJ4IjoxMTguOTQ1MzEyNDk5OTk5OTksInkiOjExOH0seyJ4IjoxMTguOTQ1MzEyNDk5OTk5OTksInkiOjE3Nn1d" data-look="neo" marker-end="url(#dg-648b9ba6_flowchart-v2-pointEnd-margin)"/><path d="M118.94531249999999,263L118.94531249999999,283" id="dg-648b9ba6-L_CONN_PARSER_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style="stroke-dasharray: 0 0 16 4; stroke-dashoffset: 0;;" data-edge="true" data-et="edge" data-id="L_CONN_PARSER_0" data-points="W3sieCI6MTE4Ljk0NTMxMjQ5OTk5OTk5LCJ5IjoyNjN9LHsieCI6MTE4Ljk0NTMxMjQ5OTk5OTk5LCJ5IjoyODd9XQ==" data-look="neo" marker-end="url(#dg-648b9ba6_flowchart-v2-pointEnd-margin)"/><path d="M118.94531249999999,374L118.94531249999999,394" id="dg-648b9ba6-L_PARSER_RESOLVE_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style="stroke-dasharray: 0 0 16 4; stroke-dashoffset: 0;;" data-edge="true" data-et="edge" data-id="L_PARSER_RESOLVE_0" data-points="W3sieCI6MTE4Ljk0NTMxMjQ5OTk5OTk5LCJ5IjozNzR9LHsieCI6MTE4Ljk0NTMxMjQ5OTk5OTk5LCJ5IjozOTh9XQ==" data-look="neo" marker-end="url(#dg-648b9ba6_flowchart-v2-pointEnd-margin)"/><path d="M118.94531249999999,485L118.94531249999999,505" id="dg-648b9ba6-L_RESOLVE_OPT_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style="stroke-dasharray: 0 0 16 4; stroke-dashoffset: 0;;" data-edge="true" data-et="edge" data-id="L_RESOLVE_OPT_0" data-points="W3sieCI6MTE4Ljk0NTMxMjQ5OTk5OTk5LCJ5Ijo0ODV9LHsieCI6MTE4Ljk0NTMxMjQ5OTk5OTk5LCJ5Ijo1MDl9XQ==" data-look="neo" marker-end="url(#dg-648b9ba6_flowchart-v2-pointEnd-margin)"/><path d="M118.94531249999999,596L118.94531249999999,616" id="dg-648b9ba6-L_OPT_EXEC_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style="stroke-dasharray: 0 0 16 4; stroke-dashoffset: 0;;" data-edge="true" data-et="edge" data-id="L_OPT_EXEC_0" data-points="W3sieCI6MTE4Ljk0NTMxMjQ5OTk5OTk5LCJ5Ijo1OTZ9LHsieCI6MTE4Ljk0NTMxMjQ5OTk5OTk5LCJ5Ijo2MjB9XQ==" data-look="neo" marker-end="url(#dg-648b9ba6_flowchart-v2-pointEnd-margin)"/><path d="M118.94531249999999,707L118.94531249999999,741L118.94531249999999,842L118.94531249999999,896" id="dg-648b9ba6-L_EXEC_ENGINE_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style="stroke-dasharray: 0 0 185 4; stroke-dashoffset: 0;;" data-edge="true" data-et="edge" data-id="L_EXEC_ENGINE_0" data-points="W3sieCI6MTE4Ljk0NTMxMjQ5OTk5OTk5LCJ5Ijo3MDd9LHsieCI6MTE4Ljk0NTMxMjQ5OTk5OTk5LCJ5Ijo3NDF9LHsieCI6MTE4Ljk0NTMxMjQ5OTk5OTk5LCJ5Ijo4NDJ9LHsieCI6MTE4Ljk0NTMxMjQ5OTk5OTk5LCJ5Ijo5MDB9XQ==" data-look="neo" marker-end="url(#dg-648b9ba6_flowchart-v2-pointEnd-margin)"/><path d="M118.94531249999999,987L118.94531249999999,1021L118.94531249999999,1057" id="dg-648b9ba6-L_ENGINE_FILES_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style="stroke-dasharray: 0 0 66 4; stroke-dashoffset: 0;;" data-edge="true" data-et="edge" data-id="L_ENGINE_FILES_0" data-points="W3sieCI6MTE4Ljk0NTMxMjQ5OTk5OTk5LCJ5Ijo5ODd9LHsieCI6MTE4Ljk0NTMxMjQ5OTk5OTk5LCJ5IjoxMDIxfSx7IngiOjExOC45NDUzMTI0OTk5OTk5OSwieSI6MTA2MX1d" data-look="neo" marker-end="url(#dg-648b9ba6_flowchart-v2-pointEnd-margin)"/></g><g class="edgeLabels"><g class="edgeLabel" transform="translate(118.73437499999999, 791.5)"><g class="label" data-id="L_EXEC_ENGINE_0" transform="translate(-36.2890625, -10.5)"><foreignObject width="72.578125" height="21"><div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="edgeLabel"><p>Handler API</p></span></div></foreignObject></g></g></g><g class="nodes"><g class="node default" id="dg-648b9ba6-flowchart-C-0" data-look="neo" transform="translate(118.94531249999999, 45)"><rect class="basic label-container" style="" x="-76" y="-33" width="152" height="66"/><g class="label" style="" transform="translate(-60, -21)"><rect/><foreignObject width="120" height="42"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table; white-space: break-spaces; line-height: 1.5; max-width: 120px; text-align: center; width: 120px;"><span class="nodeLabel"><p>客户端 / 驱动 / 连接池</p></span></div></foreignObject></g></g><g class="node default" id="dg-648b9ba6-flowchart-CONN-1" data-look="neo" transform="translate(118.9453125, 219.5)"><rect class="basic label-container" style="" x="-76" y="-43.5" width="152" height="87"/><g class="label" style="" transform="translate(-60, -31.5)"><rect/><foreignObject width="120" height="63"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table; white-space: break-spaces; line-height: 1.5; max-width: 120px; text-align: center; width: 120px;"><span class="nodeLabel"><p>连接层<br />连接管理 · 认证 · 线程 · SSL</p></span></div></foreignObject></g></g><g class="node default" id="dg-648b9ba6-flowchart-PARSER-3" data-look="neo" transform="translate(118.9453125, 330.5)"><rect class="basic label-container" style="" x="-76" y="-43.5" width="152" height="87"/><g class="label" style="" transform="translate(-60, -31.5)"><rect/><foreignObject width="120" height="63"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table; white-space: break-spaces; line-height: 1.5; max-width: 120px; text-align: center; width: 120px;"><span class="nodeLabel"><p>解析器<br />词法 / 语法分析 → AST</p></span></div></foreignObject></g></g><g class="node default" id="dg-648b9ba6-flowchart-RESOLVE-4" data-look="neo" transform="translate(118.9453125, 441.5)"><rect class="basic label-container" style="" x="-76" y="-43.5" width="152" height="87"/><g class="label" style="" transform="translate(-60, -31.5)"><rect/><foreignObject width="120" height="63"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table; white-space: break-spaces; line-height: 1.5; max-width: 120px; text-align: center; width: 120px;"><span class="nodeLabel"><p>预处理<br />名字解析 · 权限检查</p></span></div></foreignObject></g></g><g class="node default" id="dg-648b9ba6-flowchart-OPT-5" data-look="neo" transform="translate(118.9453125, 552.5)"><rect class="basic label-container" style="" x="-76" y="-43.5" width="152" height="87"/><g class="label" style="" transform="translate(-60, -31.5)"><rect/><foreignObject width="120" height="63"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table; white-space: break-spaces; line-height: 1.5; max-width: 120px; text-align: center; width: 120px;"><span class="nodeLabel"><p>优化器<br />基于成本选索引 / Join 顺序</p></span></div></foreignObject></g></g><g class="node default" id="dg-648b9ba6-flowchart-EXEC-6" data-look="neo" transform="translate(118.9453125, 663.5)"><rect class="basic label-container" style="" x="-76" y="-43.5" width="152" height="87"/><g class="label" style="" transform="translate(-60, -31.5)"><rect/><foreignObject width="120" height="63"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table; white-space: break-spaces; line-height: 1.5; max-width: 120px; text-align: center; width: 120px;"><span class="nodeLabel"><p>执行器<br />调用引擎接口 · 返回结果</p></span></div></foreignObject></g></g><g class="node default" id="dg-648b9ba6-flowchart-ENGINE-13" data-look="neo" transform="translate(118.9453125, 943.5)"><rect class="basic label-container" style="" x="-76" y="-43.5" width="152" height="87"/><g class="label" style="" transform="translate(-60, -31.5)"><rect/><foreignObject width="120" height="63"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table; white-space: break-spaces; line-height: 1.5; max-width: 120px; text-align: center; width: 120px;"><span class="nodeLabel"><p>InnoDB（默认）/ MyISAM / Memory …</p></span></div></foreignObject></g></g><g class="node default" id="dg-648b9ba6-flowchart-FILES-16" data-look="neo" transform="translate(118.94531249999999, 1115)"><rect class="basic label-container" style="" x="-76" y="-54" width="152" height="108"/><g class="label" style="" transform="translate(-60, -42)"><rect/><foreignObject width="120" height="84"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table; white-space: break-spaces; line-height: 1.5; max-width: 120px; text-align: center; width: 120px;"><span class="nodeLabel"><p>文件层<br />表空间 · redo · undo · binlog · 日志</p></span></div></foreignObject></g></g></g></g></g><defs><filter id="dg-648b9ba6-drop-shadow" height="130%" width="130%"><feDropShadow dx="4" dy="4" stdDeviation="0" flood-opacity="0.06" flood-color="#000000"/></filter></defs><defs><filter id="dg-648b9ba6-drop-shadow-small" height="150%" width="150%"><feDropShadow dx="2" dy="2" stdDeviation="0" flood-opacity="0.06" flood-color="#000000"/></filter></defs></svg>
+</div>
+      <p>三句话记忆：</p>
+      <ul>
+      <li><strong>Server 层</strong>：管「SQL 怎么理解、怎么选方案、怎么执行」，与具体引擎无关。</li>
+      <li><strong>引擎层</strong>：管「数据怎么存、怎么取、事务和锁怎么做」，可插拔，通过统一的 Handler 接口和 Server 层对话。</li>
+      <li><strong>文件层</strong>：最终落盘的东西。</li>
+      </ul>
+      <h2 id="sec-2">2. 各层职责</h2>
+      <h3 id="sec-3">2.1 连接层</h3>
+      <div class="table-wrap"><table>
+      <thead><tr><th>要点</th><th>说明</th></tr></thead>
+      <tbody><tr><td>通信协议</td><td>TCP / Unix Socket；客户端与服务端是<strong>半双工</strong>，一次只能一方发</td></tr>
+      <tr><td>认证</td><td>校验账号、host、密码；8.0 默认插件 <code>caching_sha2_password</code>，5.7 是 <code>mysql_native_password</code></td></tr>
+      <tr><td>权限生效时机</td><td>表 / 列级权限的变更在下一条语句生效；库级权限在下次 <code>USE db</code> 生效；<strong>全局权限和密码的变更只对新连接生效</strong>，已有连接不受影响</td></tr>
+      <tr><td>线程模型</td><td>社区版默认<strong>一连接一线程</strong>，线程可缓存复用（<code>thread_cache_size</code>）；线程池（thread pool）是企业版 / Percona / MariaDB 的能力</td></tr>
+      <tr><td>连接数</td><td><code>max_connections</code>（默认 151），超出报 <code>Too many connections</code>；管理员账号可额外多 1 个连接</td></tr>
+      <tr><td>空闲超时</td><td><code>wait_timeout</code>（默认 28800 秒），空闲连接超时被服务端断开</td></tr></tbody>
+      </table></div>
+      <p>长连接的坑：连接过程中临时使用的内存只有在连接断开时才释放，长连接累积后内存可能涨得很高，表现为 OOM 被系统杀。处理方式：</p>
+      <ul>
+      <li>定期断开长连接，或在大查询后由应用主动重置。</li>
+      <li>5.7+ 可以调用 <code>mysql_reset_connection</code> 重新初始化连接资源，不用重连也不用重新鉴权。</li>
+      </ul>
+      <h3 id="sec-4">2.2 SQL 层（Server）</h3>
+      <p>执行顺序：<strong>解析 → 预处理 → 优化 → 执行</strong>。</p>
+      <div class="table-wrap"><table>
+      <thead><tr><th>组件</th><th>职责</th><th>产出</th></tr></thead>
+      <tbody><tr><td>解析器</td><td>词法分析识别关键字、表名、列名；语法分析判断是否符合 MySQL 语法</td><td>语法树（AST），语法错误在这里报 <code>You have an error in your SQL syntax</code></td></tr>
+      <tr><td>预处理</td><td>名字解析：表、列是否存在，<code>*</code> 展开，视图展开；<strong>表级 / 列级权限检查</strong></td><td>带有元数据信息的语法树</td></tr>
+      <tr><td>优化器</td><td><strong>基于成本（CBO）</strong>选择执行计划：用哪个索引、Join 顺序、是否用临时表 / filesort</td><td>执行计划</td></tr>
+      <tr><td>执行器</td><td>按计划循环调用引擎接口取数 / 写数，做过滤、聚合、排序，把结果返回客户端</td><td>结果集</td></tr></tbody>
+      </table></div>
+      <p>补充：</p>
+      <ul>
+      <li>8.0 之前 Server 层还有<strong>查询缓存</strong>，8.0 已<strong>移除</strong>。原因：只要表有任何更新，该表的所有缓存全部失效，命中率低，且维护缓存有锁竞争。不要再在 8.0 上找 <code>query_cache_*</code>。</li>
+      <li>执行器的取数模式（无索引 / 有索引）：<ul>
+      <li>无索引：调用引擎「读第一行」→ 判断条件 → 「读下一行」…直到读完。</li>
+      <li>有索引：调用引擎「按索引找到第一个满足条件的行」→ 「读下一个」…直到不满足。</li>
+      </ul></li>
+      <li>慢日志里的 <code>rows_examined</code> 大致对应执行器调用引擎取行的次数，但<strong>不一定等于引擎实际扫描的行数</strong>（如覆盖索引、索引下推场景会有差异）。</li>
+      <li>内置能力在 Server 层：函数、视图、存储过程 / 函数、触发器、事件、权限体系、<strong>binlog</strong>。</li>
+      </ul>
+      <h3 id="sec-5">2.3 存储引擎层</h3>
+      <ul>
+      <li>引擎是<strong>表级别</strong>可选的（建表 <code>ENGINE=...</code>），Server 层通过 <strong>Handler API</strong> 调用，例如读下一行、按索引读、写行、更新行、删除行。</li>
+      <li>8.0 的 <code>SHOW ENGINES</code> 可以看到当前支持的引擎。</li>
+      </ul>
+      <div class="table-wrap"><table>
+      <thead><tr><th>引擎</th><th>事务</th><th>锁粒度</th><th>特点 / 现状</th></tr></thead>
+      <tbody><tr><td>InnoDB</td><td>支持</td><td>行锁</td><td><strong>5.5 起成为默认引擎</strong>，支持 MVCC、外键、崩溃恢复，生产唯一首选</td></tr>
+      <tr><td>MyISAM</td><td>不支持</td><td>表锁</td><td>不崩溃安全；8.0 起系统表也迁到了 InnoDB，基本只剩历史遗留</td></tr>
+      <tr><td>Memory</td><td>不支持</td><td>表锁</td><td>数据在内存、重启丢失，常见用途是内部临时表</td></tr>
+      <tr><td>其他</td><td></td><td></td><td>CSV、Archive、Blackhole、Federated、NDB（MySQL Cluster）等，特定场景使用</td></tr></tbody>
+      </table></div>
+      <h3 id="sec-6">2.4 文件层（8.0 datadir 里的主要文件）</h3>
+      <div class="table-wrap"><table>
+      <thead><tr><th>文件</th><th>说明</th></tr></thead>
+      <tbody><tr><td><code>*.ibd</code></td><td>独立表空间（<code>innodb_file_per_table=ON</code>，默认），一个表一个文件，存数据和索引</td></tr>
+      <tr><td><code>ibdata1</code></td><td>系统表空间：Change Buffer、doublewrite（8.0.20 之前）等</td></tr>
+      <tr><td><code>mysql.ibd</code></td><td><strong>8.0 数据字典</strong>，表结构元数据存在 InnoDB 里，不再有 <code>.frm</code></td></tr>
+      <tr><td><code>undo_001</code> / <code>undo_002</code></td><td>undo 表空间（8.0 默认两个，独立于 ibdata1）</td></tr>
+      <tr><td><code>#innodb_redo/</code></td><td>redo 日志目录（<strong>8.0.30+</strong>）；更早是 <code>ib_logfile0</code> / <code>ib_logfile1</code></td></tr>
+      <tr><td><code>binlog.000001</code> + <code>binlog.index</code></td><td>二进制日志及其索引（8.0 默认开启）</td></tr>
+      <tr><td><code>ibtmp1</code> / <code>#innodb_temp/</code></td><td>临时表空间</td></tr>
+      <tr><td>错误日志、慢日志、通用日志</td><td>文本日志，各自参数控制开关</td></tr></tbody>
+      </table></div>
+      <p>查看位置：<code>SHOW VARIABLES LIKE 'datadir';</code></p>
+      <h2 id="sec-7">3. 谁在 Server 层，谁在引擎层</h2>
+      <p>这是理解 MySQL 的关键分界线，面试很爱问「某某功能属于哪一层」。</p>
+      <div class="table-wrap"><table>
+      <thead><tr><th>能力</th><th>所在层</th><th>备注</th></tr></thead>
+      <tbody><tr><td>连接 / 认证 / 权限</td><td>Server</td><td></td></tr>
+      <tr><td>解析 / 优化 / 执行</td><td>Server</td><td></td></tr>
+      <tr><td>元数据锁（MDL）</td><td>Server</td><td>保护表结构，DDL 与 DML 互斥的来源</td></tr>
+      <tr><td><strong>binlog</strong></td><td>Server</td><td>所有引擎都有，用于归档、复制、PITR</td></tr>
+      <tr><td><strong>redo log / undo log</strong></td><td>InnoDB</td><td>InnoDB 独有，用于崩溃恢复和回滚 / MVCC</td></tr>
+      <tr><td>事务、MVCC</td><td>InnoDB</td><td>引擎自己实现，MyISAM 没有</td></tr>
+      <tr><td>行锁、间隙锁</td><td>InnoDB</td><td></td></tr>
+      <tr><td>Buffer Pool、数据页、索引 B+Tree</td><td>InnoDB</td><td></td></tr></tbody>
+      </table></div>
+      <p>推论：<strong>binlog 和 redo log 分属两层</strong>，所以才需要「两阶段提交」来保证它们一致，详见后续「日志体系」章节。</p>
+      <h2 id="sec-8">4. 一条 SELECT 的旅程</h2>
+      <p>以 <code>SELECT * FROM t WHERE k = 5;</code> 为例：</p>
+      <ol>
+      <li><strong>建立连接</strong>：连接层完成 TCP 握手、认证，分配线程。</li>
+      <li><strong>解析</strong>：词法、语法分析生成 AST。</li>
+      <li><strong>预处理</strong>：确认表 <code>t</code>、列 <code>k</code> 存在，展开 <code>*</code>，检查权限；同时在表上加 <strong>MDL 读锁</strong>。</li>
+      <li><strong>优化</strong>：评估走 <code>k</code> 的索引还是全表扫描，选成本最低的计划。</li>
+      <li><strong>执行</strong>：执行器调用 InnoDB 接口，通过索引树找到 <code>k=5</code> 的记录；若是二级索引且需要其他列，还要<strong>回表</strong>到聚簇索引；数据页优先从 <strong>Buffer Pool</strong> 读，没有才读磁盘。</li>
+      <li><strong>返回结果</strong>：<strong>边读边发</strong>，不是把结果全部算完再发。数据先写入连接的 <code>net_buffer</code>（默认 16KB），写满后再写到 socket 发送缓冲区，客户端读走后继续。因此大结果集不会撑爆服务端内存，但客户端读得慢会让线程停在 <code>Sending to client</code> 状态。</li>
+      </ol>
+      <p>观察：<code>SHOW PROCESSLIST;</code> 或 <code>performance_schema.threads</code> 看线程当前状态。</p>
+      <h2 id="sec-9">5. 一条 UPDATE 的旅程（预览）</h2>
+      <p>UPDATE 前半段和 SELECT 一样（连接 → 解析 → 预处理 → 优化），区别在执行阶段还要<strong>写日志、改页、加锁</strong>。</p>
+      <!-- mermaid
+sequenceDiagram
+          participant E as 执行器
+          participant I as InnoDB
+          participant B as Buffer Pool
+          participant R as redo log
+          participant L as binlog
+      
+          E->>I: 按条件取一行（加行锁）
+          I->>B: 数据页在内存？不在则读盘
+          B--&gt;>I: 返回行
+          I--&gt;>E: 返回行数据
+          E->>E: 计算出新值
+          E->>I: 写入新行
+          I->>I: 写 undo（用于回滚 / MVCC）
+          I->>B: 在内存页上修改（成为脏页）
+          I->>R: 写 redo log，状态 prepare
+          E->>L: 写 binlog
+          E->>I: 提交
+          I->>R: redo log 改为 commit
+-->
+<div class="diagram">
+<svg id="dg-a379bee6" width="100%" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" style="max-width: 1174px; background-color: transparent;" viewBox="-50 -10 1174 805" role="graphics-document document" aria-roledescription="sequence"><g><rect x="924" y="681" fill="#eaeaea" stroke="#666" width="150" height="73" name="L" rx="6" ry="6" class="actor actor-bottom" data-look="neo" filter="url(#dg-a379bee6-drop-shadow)"/><text x="999" y="717.5" alignment-baseline="central" class="actor actor-box" style="text-anchor: middle; font-size: 16px; font-weight: 400; dominant-baseline: central;"><tspan x="999" dy="0">binlog</tspan></text></g><g><rect x="724" y="681" fill="#eaeaea" stroke="#666" width="150" height="73" name="R" rx="6" ry="6" class="actor actor-bottom" data-look="neo" filter="url(#dg-a379bee6-drop-shadow)"/><text x="799" y="717.5" alignment-baseline="central" class="actor actor-box" style="text-anchor: middle; font-size: 16px; font-weight: 400; dominant-baseline: central;"><tspan x="799" dy="0">redo log</tspan></text></g><g><rect x="524" y="681" fill="#eaeaea" stroke="#666" width="150" height="73" name="B" rx="6" ry="6" class="actor actor-bottom" data-look="neo" filter="url(#dg-a379bee6-drop-shadow)"/><text x="599" y="717.5" alignment-baseline="central" class="actor actor-box" style="text-anchor: middle; font-size: 16px; font-weight: 400; dominant-baseline: central;"><tspan x="599" dy="0">Buffer Pool</tspan></text></g><g><rect x="246" y="681" fill="#eaeaea" stroke="#666" width="150" height="73" name="I" rx="6" ry="6" class="actor actor-bottom" data-look="neo" filter="url(#dg-a379bee6-drop-shadow)"/><text x="321" y="717.5" alignment-baseline="central" class="actor actor-box" style="text-anchor: middle; font-size: 16px; font-weight: 400; dominant-baseline: central;"><tspan x="321" dy="0">InnoDB</tspan></text></g><g><rect x="0" y="681" fill="#eaeaea" stroke="#666" width="150" height="73" name="E" rx="6" ry="6" class="actor actor-bottom" data-look="neo" filter="url(#dg-a379bee6-drop-shadow)"/><text x="75" y="717.5" alignment-baseline="central" class="actor actor-box" style="text-anchor: middle; font-size: 16px; font-weight: 400; dominant-baseline: central;"><tspan x="75" dy="0">执行器</tspan></text></g><g><line id="actor4" x1="999" y1="73" x2="999" y2="681" class="actor-line 200" stroke-width="0.5px" stroke="#999" name="L" data-et="life-line" data-id="L"/><g id="root-4" data-look="neo" data-et="participant" data-type="participant" data-id="L"><rect x="924" y="0" fill="#eaeaea" stroke="#666" width="150" height="73" name="L" rx="6" ry="6" class="actor actor-top" data-look="neo" filter="url(#dg-a379bee6-drop-shadow)"/><text x="999" y="36.5" alignment-baseline="central" class="actor actor-box" style="text-anchor: middle; font-size: 16px; font-weight: 400; dominant-baseline: central;"><tspan x="999" dy="0">binlog</tspan></text></g></g><g><line id="actor3" x1="799" y1="73" x2="799" y2="681" class="actor-line 200" stroke-width="0.5px" stroke="#999" name="R" data-et="life-line" data-id="R"/><g id="root-3" data-look="neo" data-et="participant" data-type="participant" data-id="R"><rect x="724" y="0" fill="#eaeaea" stroke="#666" width="150" height="73" name="R" rx="6" ry="6" class="actor actor-top" data-look="neo" filter="url(#dg-a379bee6-drop-shadow)"/><text x="799" y="36.5" alignment-baseline="central" class="actor actor-box" style="text-anchor: middle; font-size: 16px; font-weight: 400; dominant-baseline: central;"><tspan x="799" dy="0">redo log</tspan></text></g></g><g><line id="actor2" x1="599" y1="73" x2="599" y2="681" class="actor-line 200" stroke-width="0.5px" stroke="#999" name="B" data-et="life-line" data-id="B"/><g id="root-2" data-look="neo" data-et="participant" data-type="participant" data-id="B"><rect x="524" y="0" fill="#eaeaea" stroke="#666" width="150" height="73" name="B" rx="6" ry="6" class="actor actor-top" data-look="neo" filter="url(#dg-a379bee6-drop-shadow)"/><text x="599" y="36.5" alignment-baseline="central" class="actor actor-box" style="text-anchor: middle; font-size: 16px; font-weight: 400; dominant-baseline: central;"><tspan x="599" dy="0">Buffer Pool</tspan></text></g></g><g><line id="actor1" x1="321" y1="73" x2="321" y2="681" class="actor-line 200" stroke-width="0.5px" stroke="#999" name="I" data-et="life-line" data-id="I"/><g id="root-1" data-look="neo" data-et="participant" data-type="participant" data-id="I"><rect x="246" y="0" fill="#eaeaea" stroke="#666" width="150" height="73" name="I" rx="6" ry="6" class="actor actor-top" data-look="neo" filter="url(#dg-a379bee6-drop-shadow)"/><text x="321" y="36.5" alignment-baseline="central" class="actor actor-box" style="text-anchor: middle; font-size: 16px; font-weight: 400; dominant-baseline: central;"><tspan x="321" dy="0">InnoDB</tspan></text></g></g><g><line id="actor0" x1="75" y1="73" x2="75" y2="681" class="actor-line 200" stroke-width="0.5px" stroke="#999" name="E" data-et="life-line" data-id="E"/><g id="root-0" data-look="neo" data-et="participant" data-type="participant" data-id="E"><rect x="0" y="0" fill="#eaeaea" stroke="#666" width="150" height="73" name="E" rx="6" ry="6" class="actor actor-top" data-look="neo" filter="url(#dg-a379bee6-drop-shadow)"/><text x="75" y="36.5" alignment-baseline="central" class="actor actor-box" style="text-anchor: middle; font-size: 16px; font-weight: 400; dominant-baseline: central;"><tspan x="75" dy="0">执行器</tspan></text></g></g><style>#dg-a379bee6{font-family:trebuchet ms,verdana,arial,sans-serif;font-size:14px;fill:#333;}@keyframes edge-animation-frame{from{stroke-dashoffset:0;}}@keyframes dash{to{stroke-dashoffset:0;}}#dg-a379bee6 .edge-animation-slow{stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 50s linear infinite;stroke-linecap:round;}#dg-a379bee6 .edge-animation-fast{stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 20s linear infinite;stroke-linecap:round;}#dg-a379bee6 .error-icon{fill:#552222;}#dg-a379bee6 .error-text{fill:#552222;stroke:#552222;}#dg-a379bee6 .edge-thickness-normal{stroke-width:1px;}#dg-a379bee6 .edge-thickness-thick{stroke-width:3.5px;}#dg-a379bee6 .edge-pattern-solid{stroke-dasharray:0;}#dg-a379bee6 .edge-thickness-invisible{stroke-width:0;fill:none;}#dg-a379bee6 .edge-pattern-dashed{stroke-dasharray:3;}#dg-a379bee6 .edge-pattern-dotted{stroke-dasharray:2;}#dg-a379bee6 .marker{fill:#333333;stroke:#333333;}#dg-a379bee6 .marker.cross{stroke:#333333;}#dg-a379bee6 svg{font-family:trebuchet ms,verdana,arial,sans-serif;font-size:14px;}#dg-a379bee6 p{margin:0;}#dg-a379bee6 .actor{stroke:#9370DB;fill:#ECECFF;stroke-width:1;}#dg-a379bee6 rect.actor.outer-path[data-look="neo"]{filter:drop-shadow(1px 2px 2px rgba(185, 185, 185, 1));}#dg-a379bee6 rect.note[data-look="neo"]{stroke:#aaaa33;fill:#fff5ad;filter:drop-shadow(1px 2px 2px rgba(185, 185, 185, 1));}#dg-a379bee6 text.actor&gt;tspan{fill:black;stroke:none;}#dg-a379bee6 .actor-line{stroke:#9370DB;}#dg-a379bee6 .innerArc{stroke-width:1.5;stroke-dasharray:none;}#dg-a379bee6 .messageLine0{stroke-width:1.5;stroke-dasharray:none;stroke:#333;}#dg-a379bee6 .messageLine1{stroke-width:1.5;stroke-dasharray:2,2;stroke:#333;}#dg-a379bee6 [id$="-arrowhead"] path{fill:#333;stroke:#333;}#dg-a379bee6 .sequenceNumber{fill:white;}#dg-a379bee6 [id$="-sequencenumber"]{fill:#333;}#dg-a379bee6 [id$="-crosshead"] path{fill:#333;stroke:#333;}#dg-a379bee6 .messageText{fill:#333;stroke:none;}#dg-a379bee6 .labelBox{stroke:#9370DB;fill:#ECECFF;filter:drop-shadow(1px 2px 2px rgba(185, 185, 185, 1));}#dg-a379bee6 .labelText,#dg-a379bee6 .labelText&gt;tspan{fill:black;stroke:none;}#dg-a379bee6 .loopText,#dg-a379bee6 .loopText&gt;tspan{fill:black;stroke:none;}#dg-a379bee6 .sectionTitle,#dg-a379bee6 .sectionTitle&gt;tspan{fill:black;stroke:none;}#dg-a379bee6 .loopLine{stroke-width:2px;stroke-dasharray:2,2;stroke:#9370DB;fill:#9370DB;}#dg-a379bee6 .note{stroke:#aaaa33;fill:#fff5ad;}#dg-a379bee6 .noteText,#dg-a379bee6 .noteText&gt;tspan{fill:black;stroke:none;}#dg-a379bee6 .activation0{fill:#f4f4f4;stroke:#666;}#dg-a379bee6 .activation1{fill:#f4f4f4;stroke:#666;}#dg-a379bee6 .activation2{fill:#f4f4f4;stroke:#666;}#dg-a379bee6 .actorPopupMenu{position:absolute;}#dg-a379bee6 .actorPopupMenuPanel{position:absolute;fill:#ECECFF;box-shadow:0px 8px 16px 0px rgba(0,0,0,0.2);filter:drop-shadow(3px 5px 2px rgb(0 0 0 / 0.4));}#dg-a379bee6 .actor-man circle,#dg-a379bee6 line{fill:#ECECFF;stroke-width:2px;}#dg-a379bee6 g rect.rect{filter:drop-shadow(1px 2px 2px rgba(185, 185, 185, 1));stroke:#9370DB;}#dg-a379bee6 .node .neo-node{stroke:#9370DB;}#dg-a379bee6 [data-look="neo"].node rect,#dg-a379bee6 [data-look="neo"].cluster rect,#dg-a379bee6 [data-look="neo"].node polygon{stroke:#9370DB;filter:drop-shadow(1px 2px 2px rgba(185, 185, 185, 1));}#dg-a379bee6 [data-look="neo"].swimlane.cluster rect{filter:none;}#dg-a379bee6 [data-look="neo"].node path{stroke:#9370DB;stroke-width:1px;}#dg-a379bee6 [data-look="neo"].node .outer-path{filter:drop-shadow(1px 2px 2px rgba(185, 185, 185, 1));}#dg-a379bee6 [data-look="neo"].node .neo-line path{stroke:#9370DB;filter:none;}#dg-a379bee6 [data-look="neo"].node circle{stroke:#9370DB;filter:drop-shadow(1px 2px 2px rgba(185, 185, 185, 1));}#dg-a379bee6 [data-look="neo"].node circle .state-start{fill:#000000;}#dg-a379bee6 [data-look="neo"].icon-shape .icon{fill:#9370DB;filter:drop-shadow(1px 2px 2px rgba(185, 185, 185, 1));}#dg-a379bee6 [data-look="neo"].icon-shape .icon-neo path{stroke:#9370DB;filter:drop-shadow(1px 2px 2px rgba(185, 185, 185, 1));}#dg-a379bee6 :root{--mermaid-font-family:"trebuchet ms",verdana,arial,sans-serif;}</style><g/><defs><symbol id="dg-a379bee6-computer" width="24" height="24"><path transform="scale(.5)" d="M2 2v13h20v-13h-20zm18 11h-16v-9h16v9zm-10.228 6l.466-1h3.524l.467 1h-4.457zm14.228 3h-24l2-6h2.104l-1.33 4h18.45l-1.297-4h2.073l2 6zm-5-10h-14v-7h14v7z"/></symbol></defs><defs><symbol id="dg-a379bee6-database" fill-rule="evenodd" clip-rule="evenodd"><path transform="scale(.5)" d="M12.258.001l.256.004.255.005.253.008.251.01.249.012.247.015.246.016.242.019.241.02.239.023.236.024.233.027.231.028.229.031.225.032.223.034.22.036.217.038.214.04.211.041.208.043.205.045.201.046.198.048.194.05.191.051.187.053.183.054.18.056.175.057.172.059.168.06.163.061.16.063.155.064.15.066.074.033.073.033.071.034.07.034.069.035.068.035.067.035.066.035.064.036.064.036.062.036.06.036.06.037.058.037.058.037.055.038.055.038.053.038.052.038.051.039.05.039.048.039.047.039.045.04.044.04.043.04.041.04.04.041.039.041.037.041.036.041.034.041.033.042.032.042.03.042.029.042.027.042.026.043.024.043.023.043.021.043.02.043.018.044.017.043.015.044.013.044.012.044.011.045.009.044.007.045.006.045.004.045.002.045.001.045v17l-.001.045-.002.045-.004.045-.006.045-.007.045-.009.044-.011.045-.012.044-.013.044-.015.044-.017.043-.018.044-.02.043-.021.043-.023.043-.024.043-.026.043-.027.042-.029.042-.03.042-.032.042-.033.042-.034.041-.036.041-.037.041-.039.041-.04.041-.041.04-.043.04-.044.04-.045.04-.047.039-.048.039-.05.039-.051.039-.052.038-.053.038-.055.038-.055.038-.058.037-.058.037-.06.037-.06.036-.062.036-.064.036-.064.036-.066.035-.067.035-.068.035-.069.035-.07.034-.071.034-.073.033-.074.033-.15.066-.155.064-.16.063-.163.061-.168.06-.172.059-.175.057-.18.056-.183.054-.187.053-.191.051-.194.05-.198.048-.201.046-.205.045-.208.043-.211.041-.214.04-.217.038-.22.036-.223.034-.225.032-.229.031-.231.028-.233.027-.236.024-.239.023-.241.02-.242.019-.246.016-.247.015-.249.012-.251.01-.253.008-.255.005-.256.004-.258.001-.258-.001-.256-.004-.255-.005-.253-.008-.251-.01-.249-.012-.247-.015-.245-.016-.243-.019-.241-.02-.238-.023-.236-.024-.234-.027-.231-.028-.228-.031-.226-.032-.223-.034-.22-.036-.217-.038-.214-.04-.211-.041-.208-.043-.204-.045-.201-.046-.198-.048-.195-.05-.19-.051-.187-.053-.184-.054-.179-.056-.176-.057-.172-.059-.167-.06-.164-.061-.159-.063-.155-.064-.151-.066-.074-.033-.072-.033-.072-.034-.07-.034-.069-.035-.068-.035-.067-.035-.066-.035-.064-.036-.063-.036-.062-.036-.061-.036-.06-.037-.058-.037-.057-.037-.056-.038-.055-.038-.053-.038-.052-.038-.051-.039-.049-.039-.049-.039-.046-.039-.046-.04-.044-.04-.043-.04-.041-.04-.04-.041-.039-.041-.037-.041-.036-.041-.034-.041-.033-.042-.032-.042-.03-.042-.029-.042-.027-.042-.026-.043-.024-.043-.023-.043-.021-.043-.02-.043-.018-.044-.017-.043-.015-.044-.013-.044-.012-.044-.011-.045-.009-.044-.007-.045-.006-.045-.004-.045-.002-.045-.001-.045v-17l.001-.045.002-.045.004-.045.006-.045.007-.045.009-.044.011-.045.012-.044.013-.044.015-.044.017-.043.018-.044.02-.043.021-.043.023-.043.024-.043.026-.043.027-.042.029-.042.03-.042.032-.042.033-.042.034-.041.036-.041.037-.041.039-.041.04-.041.041-.04.043-.04.044-.04.046-.04.046-.039.049-.039.049-.039.051-.039.052-.038.053-.038.055-.038.056-.038.057-.037.058-.037.06-.037.061-.036.062-.036.063-.036.064-.036.066-.035.067-.035.068-.035.069-.035.07-.034.072-.034.072-.033.074-.033.151-.066.155-.064.159-.063.164-.061.167-.06.172-.059.176-.057.179-.056.184-.054.187-.053.19-.051.195-.05.198-.048.201-.046.204-.045.208-.043.211-.041.214-.04.217-.038.22-.036.223-.034.226-.032.228-.031.231-.028.234-.027.236-.024.238-.023.241-.02.243-.019.245-.016.247-.015.249-.012.251-.01.253-.008.255-.005.256-.004.258-.001.258.001zm-9.258 20.499v.01l.001.021.003.021.004.022.005.021.006.022.007.022.009.023.01.022.011.023.012.023.013.023.015.023.016.024.017.023.018.024.019.024.021.024.022.025.023.024.024.025.052.049.056.05.061.051.066.051.07.051.075.051.079.052.084.052.088.052.092.052.097.052.102.051.105.052.11.052.114.051.119.051.123.051.127.05.131.05.135.05.139.048.144.049.147.047.152.047.155.047.16.045.163.045.167.043.171.043.176.041.178.041.183.039.187.039.19.037.194.035.197.035.202.033.204.031.209.03.212.029.216.027.219.025.222.024.226.021.23.02.233.018.236.016.24.015.243.012.246.01.249.008.253.005.256.004.259.001.26-.001.257-.004.254-.005.25-.008.247-.011.244-.012.241-.014.237-.016.233-.018.231-.021.226-.021.224-.024.22-.026.216-.027.212-.028.21-.031.205-.031.202-.034.198-.034.194-.036.191-.037.187-.039.183-.04.179-.04.175-.042.172-.043.168-.044.163-.045.16-.046.155-.046.152-.047.148-.048.143-.049.139-.049.136-.05.131-.05.126-.05.123-.051.118-.052.114-.051.11-.052.106-.052.101-.052.096-.052.092-.052.088-.053.083-.051.079-.052.074-.052.07-.051.065-.051.06-.051.056-.05.051-.05.023-.024.023-.025.021-.024.02-.024.019-.024.018-.024.017-.024.015-.023.014-.024.013-.023.012-.023.01-.023.01-.022.008-.022.006-.022.006-.022.004-.022.004-.021.001-.021.001-.021v-4.127l-.077.055-.08.053-.083.054-.085.053-.087.052-.09.052-.093.051-.095.05-.097.05-.1.049-.102.049-.105.048-.106.047-.109.047-.111.046-.114.045-.115.045-.118.044-.12.043-.122.042-.124.042-.126.041-.128.04-.13.04-.132.038-.134.038-.135.037-.138.037-.139.035-.142.035-.143.034-.144.033-.147.032-.148.031-.15.03-.151.03-.153.029-.154.027-.156.027-.158.026-.159.025-.161.024-.162.023-.163.022-.165.021-.166.02-.167.019-.169.018-.169.017-.171.016-.173.015-.173.014-.175.013-.175.012-.177.011-.178.01-.179.008-.179.008-.181.006-.182.005-.182.004-.184.003-.184.002h-.37l-.184-.002-.184-.003-.182-.004-.182-.005-.181-.006-.179-.008-.179-.008-.178-.01-.176-.011-.176-.012-.175-.013-.173-.014-.172-.015-.171-.016-.17-.017-.169-.018-.167-.019-.166-.02-.165-.021-.163-.022-.162-.023-.161-.024-.159-.025-.157-.026-.156-.027-.155-.027-.153-.029-.151-.03-.15-.03-.148-.031-.146-.032-.145-.033-.143-.034-.141-.035-.14-.035-.137-.037-.136-.037-.134-.038-.132-.038-.13-.04-.128-.04-.126-.041-.124-.042-.122-.042-.12-.044-.117-.043-.116-.045-.113-.045-.112-.046-.109-.047-.106-.047-.105-.048-.102-.049-.1-.049-.097-.05-.095-.05-.093-.052-.09-.051-.087-.052-.085-.053-.083-.054-.08-.054-.077-.054v4.127zm0-5.654v.011l.001.021.003.021.004.021.005.022.006.022.007.022.009.022.01.022.011.023.012.023.013.023.015.024.016.023.017.024.018.024.019.024.021.024.022.024.023.025.024.024.052.05.056.05.061.05.066.051.07.051.075.052.079.051.084.052.088.052.092.052.097.052.102.052.105.052.11.051.114.051.119.052.123.05.127.051.131.05.135.049.139.049.144.048.147.048.152.047.155.046.16.045.163.045.167.044.171.042.176.042.178.04.183.04.187.038.19.037.194.036.197.034.202.033.204.032.209.03.212.028.216.027.219.025.222.024.226.022.23.02.233.018.236.016.24.014.243.012.246.01.249.008.253.006.256.003.259.001.26-.001.257-.003.254-.006.25-.008.247-.01.244-.012.241-.015.237-.016.233-.018.231-.02.226-.022.224-.024.22-.025.216-.027.212-.029.21-.03.205-.032.202-.033.198-.035.194-.036.191-.037.187-.039.183-.039.179-.041.175-.042.172-.043.168-.044.163-.045.16-.045.155-.047.152-.047.148-.048.143-.048.139-.05.136-.049.131-.05.126-.051.123-.051.118-.051.114-.052.11-.052.106-.052.101-.052.096-.052.092-.052.088-.052.083-.052.079-.052.074-.051.07-.052.065-.051.06-.05.056-.051.051-.049.023-.025.023-.024.021-.025.02-.024.019-.024.018-.024.017-.024.015-.023.014-.023.013-.024.012-.022.01-.023.01-.023.008-.022.006-.022.006-.022.004-.021.004-.022.001-.021.001-.021v-4.139l-.077.054-.08.054-.083.054-.085.052-.087.053-.09.051-.093.051-.095.051-.097.05-.1.049-.102.049-.105.048-.106.047-.109.047-.111.046-.114.045-.115.044-.118.044-.12.044-.122.042-.124.042-.126.041-.128.04-.13.039-.132.039-.134.038-.135.037-.138.036-.139.036-.142.035-.143.033-.144.033-.147.033-.148.031-.15.03-.151.03-.153.028-.154.028-.156.027-.158.026-.159.025-.161.024-.162.023-.163.022-.165.021-.166.02-.167.019-.169.018-.169.017-.171.016-.173.015-.173.014-.175.013-.175.012-.177.011-.178.009-.179.009-.179.007-.181.007-.182.005-.182.004-.184.003-.184.002h-.37l-.184-.002-.184-.003-.182-.004-.182-.005-.181-.007-.179-.007-.179-.009-.178-.009-.176-.011-.176-.012-.175-.013-.173-.014-.172-.015-.171-.016-.17-.017-.169-.018-.167-.019-.166-.02-.165-.021-.163-.022-.162-.023-.161-.024-.159-.025-.157-.026-.156-.027-.155-.028-.153-.028-.151-.03-.15-.03-.148-.031-.146-.033-.145-.033-.143-.033-.141-.035-.14-.036-.137-.036-.136-.037-.134-.038-.132-.039-.13-.039-.128-.04-.126-.041-.124-.042-.122-.043-.12-.043-.117-.044-.116-.044-.113-.046-.112-.046-.109-.046-.106-.047-.105-.048-.102-.049-.1-.049-.097-.05-.095-.051-.093-.051-.09-.051-.087-.053-.085-.052-.083-.054-.08-.054-.077-.054v4.139zm0-5.666v.011l.001.02.003.022.004.021.005.022.006.021.007.022.009.023.01.022.011.023.012.023.013.023.015.023.016.024.017.024.018.023.019.024.021.025.022.024.023.024.024.025.052.05.056.05.061.05.066.051.07.051.075.052.079.051.084.052.088.052.092.052.097.052.102.052.105.051.11.052.114.051.119.051.123.051.127.05.131.05.135.05.139.049.144.048.147.048.152.047.155.046.16.045.163.045.167.043.171.043.176.042.178.04.183.04.187.038.19.037.194.036.197.034.202.033.204.032.209.03.212.028.216.027.219.025.222.024.226.021.23.02.233.018.236.017.24.014.243.012.246.01.249.008.253.006.256.003.259.001.26-.001.257-.003.254-.006.25-.008.247-.01.244-.013.241-.014.237-.016.233-.018.231-.02.226-.022.224-.024.22-.025.216-.027.212-.029.21-.03.205-.032.202-.033.198-.035.194-.036.191-.037.187-.039.183-.039.179-.041.175-.042.172-.043.168-.044.163-.045.16-.045.155-.047.152-.047.148-.048.143-.049.139-.049.136-.049.131-.051.126-.05.123-.051.118-.052.114-.051.11-.052.106-.052.101-.052.096-.052.092-.052.088-.052.083-.052.079-.052.074-.052.07-.051.065-.051.06-.051.056-.05.051-.049.023-.025.023-.025.021-.024.02-.024.019-.024.018-.024.017-.024.015-.023.014-.024.013-.023.012-.023.01-.022.01-.023.008-.022.006-.022.006-.022.004-.022.004-.021.001-.021.001-.021v-4.153l-.077.054-.08.054-.083.053-.085.053-.087.053-.09.051-.093.051-.095.051-.097.05-.1.049-.102.048-.105.048-.106.048-.109.046-.111.046-.114.046-.115.044-.118.044-.12.043-.122.043-.124.042-.126.041-.128.04-.13.039-.132.039-.134.038-.135.037-.138.036-.139.036-.142.034-.143.034-.144.033-.147.032-.148.032-.15.03-.151.03-.153.028-.154.028-.156.027-.158.026-.159.024-.161.024-.162.023-.163.023-.165.021-.166.02-.167.019-.169.018-.169.017-.171.016-.173.015-.173.014-.175.013-.175.012-.177.01-.178.01-.179.009-.179.007-.181.006-.182.006-.182.004-.184.003-.184.001-.185.001-.185-.001-.184-.001-.184-.003-.182-.004-.182-.006-.181-.006-.179-.007-.179-.009-.178-.01-.176-.01-.176-.012-.175-.013-.173-.014-.172-.015-.171-.016-.17-.017-.169-.018-.167-.019-.166-.02-.165-.021-.163-.023-.162-.023-.161-.024-.159-.024-.157-.026-.156-.027-.155-.028-.153-.028-.151-.03-.15-.03-.148-.032-.146-.032-.145-.033-.143-.034-.141-.034-.14-.036-.137-.036-.136-.037-.134-.038-.132-.039-.13-.039-.128-.041-.126-.041-.124-.041-.122-.043-.12-.043-.117-.044-.116-.044-.113-.046-.112-.046-.109-.046-.106-.048-.105-.048-.102-.048-.1-.05-.097-.049-.095-.051-.093-.051-.09-.052-.087-.052-.085-.053-.083-.053-.08-.054-.077-.054v4.153zm8.74-8.179l-.257.004-.254.005-.25.008-.247.011-.244.012-.241.014-.237.016-.233.018-.231.021-.226.022-.224.023-.22.026-.216.027-.212.028-.21.031-.205.032-.202.033-.198.034-.194.036-.191.038-.187.038-.183.04-.179.041-.175.042-.172.043-.168.043-.163.045-.16.046-.155.046-.152.048-.148.048-.143.048-.139.049-.136.05-.131.05-.126.051-.123.051-.118.051-.114.052-.11.052-.106.052-.101.052-.096.052-.092.052-.088.052-.083.052-.079.052-.074.051-.07.052-.065.051-.06.05-.056.05-.051.05-.023.025-.023.024-.021.024-.02.025-.019.024-.018.024-.017.023-.015.024-.014.023-.013.023-.012.023-.01.023-.01.022-.008.022-.006.023-.006.021-.004.022-.004.021-.001.021-.001.021.001.021.001.021.004.021.004.022.006.021.006.023.008.022.01.022.01.023.012.023.013.023.014.023.015.024.017.023.018.024.019.024.02.025.021.024.023.024.023.025.051.05.056.05.06.05.065.051.07.052.074.051.079.052.083.052.088.052.092.052.096.052.101.052.106.052.11.052.114.052.118.051.123.051.126.051.131.05.136.05.139.049.143.048.148.048.152.048.155.046.16.046.163.045.168.043.172.043.175.042.179.041.183.04.187.038.191.038.194.036.198.034.202.033.205.032.21.031.212.028.216.027.22.026.224.023.226.022.231.021.233.018.237.016.241.014.244.012.247.011.25.008.254.005.257.004.26.001.26-.001.257-.004.254-.005.25-.008.247-.011.244-.012.241-.014.237-.016.233-.018.231-.021.226-.022.224-.023.22-.026.216-.027.212-.028.21-.031.205-.032.202-.033.198-.034.194-.036.191-.038.187-.038.183-.04.179-.041.175-.042.172-.043.168-.043.163-.045.16-.046.155-.046.152-.048.148-.048.143-.048.139-.049.136-.05.131-.05.126-.051.123-.051.118-.051.114-.052.11-.052.106-.052.101-.052.096-.052.092-.052.088-.052.083-.052.079-.052.074-.051.07-.052.065-.051.06-.05.056-.05.051-.05.023-.025.023-.024.021-.024.02-.025.019-.024.018-.024.017-.023.015-.024.014-.023.013-.023.012-.023.01-.023.01-.022.008-.022.006-.023.006-.021.004-.022.004-.021.001-.021.001-.021-.001-.021-.001-.021-.004-.021-.004-.022-.006-.021-.006-.023-.008-.022-.01-.022-.01-.023-.012-.023-.013-.023-.014-.023-.015-.024-.017-.023-.018-.024-.019-.024-.02-.025-.021-.024-.023-.024-.023-.025-.051-.05-.056-.05-.06-.05-.065-.051-.07-.052-.074-.051-.079-.052-.083-.052-.088-.052-.092-.052-.096-.052-.101-.052-.106-.052-.11-.052-.114-.052-.118-.051-.123-.051-.126-.051-.131-.05-.136-.05-.139-.049-.143-.048-.148-.048-.152-.048-.155-.046-.16-.046-.163-.045-.168-.043-.172-.043-.175-.042-.179-.041-.183-.04-.187-.038-.191-.038-.194-.036-.198-.034-.202-.033-.205-.032-.21-.031-.212-.028-.216-.027-.22-.026-.224-.023-.226-.022-.231-.021-.233-.018-.237-.016-.241-.014-.244-.012-.247-.011-.25-.008-.254-.005-.257-.004-.26-.001-.26.001z"/></symbol></defs><defs><symbol id="dg-a379bee6-clock" width="24" height="24"><path transform="scale(.5)" d="M12 2c5.514 0 10 4.486 10 10s-4.486 10-10 10-10-4.486-10-10 4.486-10 10-10zm0-2c-6.627 0-12 5.373-12 12s5.373 12 12 12 12-5.373 12-12-5.373-12-12-12zm5.848 12.459c.202.038.202.333.001.372-1.907.361-6.045 1.111-6.547 1.111-.719 0-1.301-.582-1.301-1.301 0-.512.77-5.447 1.125-7.445.034-.192.312-.181.343.014l.985 6.238 5.394 1.011z"/></symbol></defs><defs><marker id="dg-a379bee6-arrowhead" refX="7.9" refY="5" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto-start-reverse"><path d="M -1 0 L 10 5 L 0 10 z"/></marker></defs><defs><marker id="dg-a379bee6-crosshead" markerWidth="15" markerHeight="8" orient="auto" refX="4" refY="4.5"><path fill="none" stroke="#000000" stroke-width="1pt" d="M 1,2 L 6,7 M 6,2 L 1,7" style="stroke-dasharray: 0, 0;"/></marker></defs><defs><marker id="dg-a379bee6-filled-head" refX="15.5" refY="7" markerWidth="20" markerHeight="28" orient="auto"><path d="M 18,7 L9,13 L14,7 L9,1 Z"/></marker></defs><defs><marker id="dg-a379bee6-sequencenumber" refX="15" refY="15" markerWidth="60" markerHeight="40" orient="auto"><circle cx="15" cy="15" r="6"/></marker></defs><defs><marker id="dg-a379bee6-solidTopArrowHead" refX="7.9" refY="7.25" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto-start-reverse"><path d="M 0 0 L 10 8 L 0 8 z"/></marker></defs><defs><marker id="dg-a379bee6-solidBottomArrowHead" refX="7.9" refY="0.75" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto-start-reverse"><path d="M 0 0 L 10 0 L 0 8 z"/></marker></defs><defs><marker id="dg-a379bee6-stickTopArrowHead" refX="7.5" refY="7" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto-start-reverse"><path d="M 0 0 L 7 7" stroke="black" stroke-width="1.5" fill="none"/></marker></defs><defs><marker id="dg-a379bee6-stickBottomArrowHead" refX="7.5" refY="0" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto-start-reverse"><path d="M 0 7 L 7 0" stroke="black" stroke-width="1.5" fill="none"/></marker></defs><defs><filter id="dg-a379bee6-drop-shadow" height="130%" width="130%"><feDropShadow dx="4" dy="4" stdDeviation="0" flood-opacity="0.06" flood-color="#FFFFFF"/></filter></defs><text x="195" y="88" text-anchor="middle" alignment-baseline="middle" class="messageText" dy="1em" style="font-size: 16px; font-weight: 400; dominant-baseline: middle;">按条件取一行（加行锁）</text><line x1="76" y1="117" x2="314" y2="117" class="messageLine0" data-et="message" data-id="i0" data-from="E" data-to="I" stroke-width="2" stroke="none" marker-end="url(#dg-a379bee6-arrowhead)" style="fill: none;"/><text x="457" y="132" text-anchor="middle" alignment-baseline="middle" class="messageText" dy="1em" style="font-size: 16px; font-weight: 400; dominant-baseline: middle;">数据页在内存？不在则读盘</text><line x1="322" y1="161" x2="592" y2="161" class="messageLine0" data-et="message" data-id="i1" data-from="I" data-to="B" stroke-width="2" stroke="none" marker-end="url(#dg-a379bee6-arrowhead)" style="fill: none;"/><text x="463" y="176" text-anchor="middle" alignment-baseline="middle" class="messageText" dy="1em" style="font-size: 16px; font-weight: 400; dominant-baseline: middle;">返回行</text><line x1="598" y1="205" x2="328" y2="205" class="messageLine1" data-et="message" data-id="i2" data-from="B" data-to="I" stroke-width="2" stroke="none" marker-end="url(#dg-a379bee6-arrowhead)" style="stroke-dasharray: 3, 3; fill: none;"/><text x="201" y="220" text-anchor="middle" alignment-baseline="middle" class="messageText" dy="1em" style="font-size: 16px; font-weight: 400; dominant-baseline: middle;">返回行数据</text><line x1="320" y1="249" x2="82" y2="249" class="messageLine1" data-et="message" data-id="i3" data-from="I" data-to="E" stroke-width="2" stroke="none" marker-end="url(#dg-a379bee6-arrowhead)" style="stroke-dasharray: 3, 3; fill: none;"/><text x="76" y="264" text-anchor="middle" alignment-baseline="middle" class="messageText" dy="1em" style="font-size: 16px; font-weight: 400; dominant-baseline: middle;">计算出新值</text><path d="M 76,293 C 136,283 136,323 76,313" class="messageLine0" data-et="message" data-id="i4" data-from="E" data-to="E" stroke-width="2" stroke="none" marker-end="url(#dg-a379bee6-arrowhead)" style="fill: none;"/><text x="195" y="338" text-anchor="middle" alignment-baseline="middle" class="messageText" dy="1em" style="font-size: 16px; font-weight: 400; dominant-baseline: middle;">写入新行</text><line x1="76" y1="367" x2="314" y2="367" class="messageLine0" data-et="message" data-id="i5" data-from="E" data-to="I" stroke-width="2" stroke="none" marker-end="url(#dg-a379bee6-arrowhead)" style="fill: none;"/><text x="322" y="382" text-anchor="middle" alignment-baseline="middle" class="messageText" dy="1em" style="font-size: 16px; font-weight: 400; dominant-baseline: middle;">写 undo（用于回滚 / MVCC）</text><path d="M 322,411 C 382,401 382,441 322,431" class="messageLine0" data-et="message" data-id="i6" data-from="I" data-to="I" stroke-width="2" stroke="none" marker-end="url(#dg-a379bee6-arrowhead)" style="fill: none;"/><text x="457" y="456" text-anchor="middle" alignment-baseline="middle" class="messageText" dy="1em" style="font-size: 16px; font-weight: 400; dominant-baseline: middle;">在内存页上修改（成为脏页）</text><line x1="322" y1="485" x2="592" y2="485" class="messageLine0" data-et="message" data-id="i7" data-from="I" data-to="B" stroke-width="2" stroke="none" marker-end="url(#dg-a379bee6-arrowhead)" style="fill: none;"/><text x="557" y="500" text-anchor="middle" alignment-baseline="middle" class="messageText" dy="1em" style="font-size: 16px; font-weight: 400; dominant-baseline: middle;">写 redo log，状态 prepare</text><line x1="322" y1="529" x2="792" y2="529" class="messageLine0" data-et="message" data-id="i8" data-from="I" data-to="R" stroke-width="2" stroke="none" marker-end="url(#dg-a379bee6-arrowhead)" style="fill: none;"/><text x="534" y="544" text-anchor="middle" alignment-baseline="middle" class="messageText" dy="1em" style="font-size: 16px; font-weight: 400; dominant-baseline: middle;">写 binlog</text><line x1="76" y1="573" x2="992" y2="573" class="messageLine0" data-et="message" data-id="i9" data-from="E" data-to="L" stroke-width="2" stroke="none" marker-end="url(#dg-a379bee6-arrowhead)" style="fill: none;"/><text x="195" y="588" text-anchor="middle" alignment-baseline="middle" class="messageText" dy="1em" style="font-size: 16px; font-weight: 400; dominant-baseline: middle;">提交</text><line x1="76" y1="617" x2="314" y2="617" class="messageLine0" data-et="message" data-id="i10" data-from="E" data-to="I" stroke-width="2" stroke="none" marker-end="url(#dg-a379bee6-arrowhead)" style="fill: none;"/><text x="557" y="632" text-anchor="middle" alignment-baseline="middle" class="messageText" dy="1em" style="font-size: 16px; font-weight: 400; dominant-baseline: middle;">redo log 改为 commit</text><line x1="322" y1="661" x2="792" y2="661" class="messageLine0" data-et="message" data-id="i11" data-from="I" data-to="R" stroke-width="2" stroke="none" marker-end="url(#dg-a379bee6-arrowhead)" style="fill: none;"/></svg>
+</div>
+      <p>这里只建立整体印象，细节在后续章节展开：</p>
+      <ul>
+      <li>为什么先写日志再改磁盘（WAL）、脏页什么时候落盘 → 日志体系、InnoDB 架构。</li>
+      <li>为什么要 prepare / commit 两步 → 两阶段提交。</li>
+      <li>行锁什么时候加、什么时候放 → 锁、事务。</li>
+      </ul>
+      <h2 id="sec-10">6. 8.0 与 5.7 的主要差异（总览级）</h2>
+      <div class="table-wrap"><table>
+      <thead><tr><th>方面</th><th>5.7</th><th>8.0</th></tr></thead>
+      <tbody><tr><td>查询缓存</td><td>有（默认关）</td><td><strong>移除</strong></td></tr>
+      <tr><td>元数据</td><td><code>.frm</code> 文件 + 系统表</td><td><strong>事务性数据字典</strong>（<code>mysql.ibd</code>），DDL 原子化（Atomic DDL）</td></tr>
+      <tr><td>默认字符集</td><td>latin1</td><td><strong>utf8mb4</strong>（<code>utf8mb4_0900_ai_ci</code>）</td></tr>
+      <tr><td>默认认证插件</td><td><code>mysql_native_password</code></td><td><code>caching_sha2_password</code></td></tr>
+      <tr><td>用户体系</td><td>无角色</td><td>支持<strong>角色（Role）</strong></td></tr>
+      <tr><td>新特性</td><td></td><td>CTE、窗口函数、降序索引、不可见索引、Hash Join（8.0.18+）、INSTANT 加列（8.0.12+）</td></tr>
+      <tr><td>redo log</td><td>固定两个文件</td><td>8.0.30+ 目录 + 动态调整容量</td></tr></tbody>
+      </table></div>
+      <h2 id="sec-11">7. 常见面试题</h2>
+      <p><strong>Q1：一条 SQL 在 MySQL 里是怎么执行的？</strong> 连接层建连认证 → 解析 → 预处理 → 优化 → 执行器调引擎取数 → 边读边发给客户端。更新操作还会涉及 undo、redo、binlog 和两阶段提交。</p>
+      <p><strong>Q2：为什么 MySQL 分 Server 层和引擎层？</strong> 把「SQL 通用能力」和「数据存储」解耦，引擎可插拔：换引擎不用改 SQL 层。代价是跨层功能（如 binlog 和 redo log）要靠额外机制协调一致。</p>
+      <p><strong>Q3：8.0 为什么删掉查询缓存？</strong> 任何表更新都会使该表的全部缓存失效，在写多读少或更新频繁的场景命中率极低，并且缓存的维护带来锁竞争。缓存应放在应用层（Redis 等）自行控制。</p>
+      <p><strong>Q4：连接数过多怎么排查和处理？</strong> 看 <code>SHOW PROCESSLIST</code> 里都是什么状态（大量 Sleep 是连接泄漏或连接池配置过大，大量 Query 是慢 SQL 或锁等待）；处理：优化慢 SQL、限制 / 回收空闲连接（<code>wait_timeout</code>）、使用连接池或中间件；<code>max_connections</code> 调大只是缓解，不要当根治手段。</p>
+      <p><strong>Q5：MySQL 长连接内存为什么会越涨越高？怎么办？</strong> 连接内的临时资源在断开前不会释放。定期断开长连接，或 5.7+ 用 <code>mysql_reset_connection</code> 重置。</p>
+      <p><strong>Q6：binlog 和 redo log 的区别？</strong></p>
+      <ul>
+      <li>层级：binlog 在 Server 层，所有引擎可用；redo log 是 InnoDB 独有。</li>
+      <li>内容：binlog 是逻辑日志（记录语句或行变化）；redo log 是物理日志（记录数据页的修改）。</li>
+      <li>写法：binlog 追加写；redo log 循环写。</li>
+      <li>用途：binlog 用于复制和恢复到任意时间点；redo log 用于崩溃恢复。</li>
+      </ul>
+      <h2 id="sec-12">8. 本章小结</h2>
+      <ul>
+      <li>架构：连接层 → SQL 层（解析 / 预处理 / 优化 / 执行）→ 引擎层（Handler API）→ 文件层。</li>
+      <li>分界线：binlog、MDL、优化器在 Server；redo、undo、MVCC、行锁在 InnoDB。</li>
+      <li>结果返回是流式的，更新则多出日志与锁的一整套机制。</li>
+      <li>8.0 去掉了查询缓存，数据字典进了 InnoDB。</li>
+      </ul>
+      <h2 id="sec-13">相关内容</h2>
+      <ul>
+      <li><a href="../overview.html">MySQL 知识总览</a>：体系大纲</li>
+      <li><a href="../01-sql-layer/sql-execution-and-explain.html">SQL 层：解析、优化器、执行器与执行计划</a>：下一章，深入 Server 层的执行过程</li>
+      </ul>
+    </article>
+<!-- shell:bottom:start（同步工具：scripts/site/sync-shell.py） -->
+  </main>
+</div>
+<footer class="site-footer">DBA Playbook · 个人 DBA 知识库与实战手册 · 本地构建，离线可读</footer>
+<script defer src="../../../assets/site/nav.js"></script>
+<script defer src="../../../assets/site/search-index.js"></script>
+<script defer src="../../../assets/site/ui.js"></script>
+<!-- shell:bottom:end -->
+</body>
+</html>

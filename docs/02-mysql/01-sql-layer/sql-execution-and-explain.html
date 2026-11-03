@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MySQL SQL 层：解析、优化器、执行器与执行计划 | DBA Playbook</title>
+<meta name="database" content="MySQL">
+<meta name="category" content="性能">
+<meta name="tags" content="索引, 慢查询, 参数">
+<meta name="date" content="2026-11-03">
+<meta name="status" content="draft">
+<!-- fallback-style:start（同步工具：scripts/site/sync-shell.py；样式源：scripts/site/theme.css） -->
+<script>document.documentElement.className += " js";</script>
+<style>
+/* 静态主题：外部 CSS/JS 不可用时（如 Obsidian HTML 插件）保证阅读版式 */
+:root {
+  --bg: #f6f7f9; --panel: #ffffff; --text: #1f2329; --muted: #646a73;
+  --accent: #2563eb; --accent-soft: #eaf0fe; --border: #e4e7ed;
+  --code-bg: #f3f5f8; --pre-bg: #1f2430; --pre-text: #dce1e8;
+  --warn: #b45309; --ok: #15803d; --shadow: 0 1px 3px rgba(15, 23, 42, .08);
+  color-scheme: light dark;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0f141a; --panel: #161d25; --text: #d7dde4; --muted: #8b949e;
+    --accent: #6ea8fe; --accent-soft: #1b2a41; --border: #2a3340;
+    --code-bg: #1c242e; --pre-bg: #10161d; --pre-text: #cdd7e1;
+    --warn: #f0b429; --ok: #4ade80; --shadow: none;
+  }
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--panel); color: var(--text);
+  font: 16px/1.75 -apple-system, "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+  overflow-wrap: break-word;
+}
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.site-header, .sidebar, .nav-toggle { display: none; }
+.skip-link { position: absolute; left: -999px; top: .5rem; z-index: 100; }
+.skip-link:focus { left: .5rem; padding: .35rem .8rem; border-radius: .4rem; background: var(--panel); border: 1px solid var(--accent); }
+.layout, main { display: block; }
+.content { max-width: 52rem; margin: 0 auto; padding: 1.6rem 1.5rem 3rem; }
+.crumb { font-size: .82rem; color: var(--muted); margin-bottom: .9rem; }
+.crumb span { color: var(--text); }
+.meta { display: flex; flex-wrap: wrap; gap: .42rem; margin: .35rem 0 1.2rem; }
+.badge {
+  display: inline-flex; align-items: center; font-size: .74rem; line-height: 1.6;
+  padding: .05rem .6rem; border-radius: 1rem; border: 1px solid var(--border);
+  color: var(--muted); background: var(--panel);
+}
+.badge.db { color: var(--accent); border-color: var(--accent); background: var(--accent-soft); font-weight: 600; }
+.badge.cat { color: var(--warn); border-color: currentColor; }
+.badge.status-draft { color: var(--warn); border-color: currentColor; font-weight: 600; }
+.badge.status-stable, .badge.status-done { color: var(--ok); border-color: currentColor; }
+.chip { display: inline-block; font-size: .72rem; padding: 0 .5rem; margin-left: .45rem; border-radius: 1rem; background: var(--accent-soft); color: var(--accent); }
+.content .toc-inline { margin: 0 0 1.6rem; border: 1px solid var(--border); border-radius: .6rem; background: var(--bg); font-size: .86rem; }
+.content .toc-inline summary { cursor: pointer; padding: .45rem .95rem; font-weight: 600; }
+.content .toc-inline ul { list-style: none; margin: 0; padding: .1rem .95rem .7rem; columns: 2 16rem; column-gap: 1.6rem; }
+.content .toc-inline li { margin: 0; padding: .08rem 0; line-height: 1.5; break-inside: avoid; }
+.content .toc-inline li.h3 { padding-left: 1rem; font-size: .82rem; }
+.content .toc-inline a { color: var(--muted); }
+.content .toc-inline a:hover { color: var(--accent); }
+.content h1 { font-size: 1.95rem; line-height: 1.4; margin: .2rem 0 .7rem; letter-spacing: .01em; }
+.content h2 { font-size: 1.4rem; margin: 2.5rem 0 1rem; padding-bottom: .35rem; border-bottom: 2px solid var(--border); }
+.content h3 { font-size: 1.14rem; margin: 1.9rem 0 .7rem; padding-left: .65rem; border-left: 3px solid var(--accent); line-height: 1.5; }
+.content h4 { font-size: 1rem; margin: 1.4rem 0 .55rem; }
+.content p { margin: .8rem 0; }
+.content ul, .content ol { padding-left: 1.6rem; margin: .8rem 0; }
+.content li { margin: .3rem 0; }
+.content li::marker { color: var(--muted); }
+.content hr { border: 0; border-top: 1px solid var(--border); margin: 2.2rem 0; }
+.content strong { font-weight: 650; }
+.content blockquote {
+  margin: 1.2rem 0; padding: .75rem 1.2rem; border-left: 4px solid var(--accent);
+  background: var(--accent-soft); border-radius: 0 .6rem .6rem 0;
+}
+.content blockquote p { margin: .35rem 0; }
+.content blockquote p:first-child { margin-top: 0; }
+.content blockquote p:last-child { margin-bottom: 0; }
+.content code {
+  font-family: "JetBrains Mono", Consolas, Menlo, monospace; font-size: .85em;
+  background: var(--code-bg); border: 1px solid var(--border);
+  padding: .08em .38em; border-radius: .35rem; word-break: break-word;
+}
+.content pre {
+  background: var(--pre-bg); color: var(--pre-text); border-radius: .7rem;
+  padding: 1rem 1.25rem; overflow-x: auto; font-size: .85rem; line-height: 1.65; margin: 1.1rem 0;
+  tab-size: 4;
+}
+.content pre code { background: none; border: 0; padding: 0; color: inherit; font-size: 1em; word-break: normal; }
+.content pre.mermaid { background: #fff; color: #333; text-align: center; }
+.content .diagram {
+  overflow-x: auto; margin: 1.3rem 0; padding: .9rem; text-align: center;
+  background: #fff; border: 1px solid var(--border); border-radius: .7rem;
+}
+.content .diagram svg { max-width: 100%; height: auto; }
+.table-wrap { overflow-x: auto; margin: 1.2rem 0; border: 1px solid var(--border); border-radius: .7rem; }
+.content table { border-collapse: collapse; width: 100%; font-size: .9rem; }
+.content th, .content td { padding: .5rem .8rem; text-align: left; vertical-align: top; border-bottom: 1px solid var(--border); }
+.content th { background: var(--code-bg); font-weight: 650; white-space: nowrap; }
+.content tbody tr:nth-child(even) td { background: color-mix(in srgb, var(--code-bg) 55%, transparent); }
+.content tbody tr:last-child td { border-bottom: 0; }
+.content td code { white-space: nowrap; }
+.content img { max-width: 100%; border-radius: .5rem; }
+.hero { text-align: center; padding: 2.4rem 0 1rem; }
+.hero h1 { font-size: 2.35rem; margin: 0 0 .75rem; }
+.tagline { color: var(--muted); font-size: 1.05rem; margin: 0 auto; max-width: 42rem; }
+.hero-links { margin-top: 1.5rem; }
+.btn { display: inline-block; padding: .52rem 1.25rem; border-radius: .55rem; background: var(--accent); color: #fff; font-weight: 600; margin: 0 .35rem; }
+.btn:hover { text-decoration: none; filter: brightness(1.08); }
+.btn.ghost { background: var(--panel); color: var(--accent); border: 1px solid var(--accent); }
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 1rem; margin: 1.1rem 0 2rem; }
+.card { display: block; padding: 1.1rem 1.3rem; background: var(--panel); border: 1px solid var(--border); border-radius: .75rem; color: var(--text); box-shadow: var(--shadow); }
+.card:hover { text-decoration: none; border-color: var(--accent); }
+.card h3 { margin: 0 0 .45rem; font-size: 1.05rem; padding: 0; border: 0; }
+.card p { margin: 0; font-size: .85rem; color: var(--muted); }
+.recent { list-style: none; padding-left: 0; }
+.recent li { padding: .32rem 0; border-bottom: 1px dashed var(--border); }
+.recent .date { font-family: Consolas, monospace; font-size: .8rem; color: var(--muted); margin-right: .6rem; }
+.auto-list { padding-left: 1.2rem; }
+.site-footer { text-align: center; color: var(--muted); font-size: .8rem; padding: 1.4rem 1rem 2rem; border-top: 1px solid var(--border); }
+@media (max-width: 640px) {
+  .content { padding: 1.1rem 1rem 2.5rem; }
+  .content h1 { font-size: 1.55rem; }
+}
+@media print {
+  .toc-inline > summary { display: none; }
+  .content { max-width: none; padding: 0; }
+  .content pre { white-space: pre-wrap; }
+}
+.hljs-keyword, .hljs-selector-tag, .hljs-doctag { color: #c678dd; }
+.hljs-string, .hljs-attr, .hljs-regexp { color: #98c379; }
+.hljs-number, .hljs-literal, .hljs-symbol { color: #d19a66; }
+.hljs-comment, .hljs-quote { color: #7f8c98; font-style: italic; }
+.hljs-title, .hljs-function, .hljs-section { color: #61afef; }
+.hljs-built_in, .hljs-type { color: #e6c07b; }
+.hljs-variable, .hljs-template-variable, .hljs-name { color: #e06c75; }
+.hljs-meta { color: #56b6c2; }
+</style>
+<!-- fallback-style:end -->
+<link rel="stylesheet" href="../../../assets/site/site.css">
+</head>
+<body data-root="../../../">
+<!-- shell:top:start（同步工具：scripts/site/sync-shell.py） -->
+<a class="skip-link" href="#main">跳到正文</a>
+<header class="site-header">
+  <button class="nav-toggle" id="nav-toggle" type="button" aria-label="打开目录" aria-controls="sidebar" aria-expanded="false">☰</button>
+  <a class="brand" href="../../../index.html">DBA Playbook</a>
+  <div class="search" id="search-box" role="search"></div>
+</header>
+<div class="layout">
+  <nav class="sidebar" id="sidebar" aria-label="站点目录"></nav>
+  <main id="main">
+<!-- shell:top:end -->
+    <article class="content">
+      <h1>MySQL SQL 层：解析、优化器、执行器与执行计划</h1>
+<!-- page-head:start（同步工具：scripts/site/sync-shell.py） -->
+<p class="meta"><span class="badge db">MySQL</span><span class="badge cat">性能</span><span class="badge">索引</span><span class="badge">慢查询</span><span class="badge">参数</span><span class="badge">2026-11-03</span><span class="badge status-draft">draft</span></p>
+<nav class="toc-inline" aria-label="本文目录"><details><summary>本文目录（35 节）</summary>
+<ul>
+<li class="h2"><a href="#sec-1">1. 本章全景</a></li>
+<li class="h2"><a href="#sec-2">2. 解析器</a></li>
+<li class="h3"><a href="#sec-3">2.1 做什么</a></li>
+<li class="h3"><a href="#sec-4">2.2 要留意的点</a></li>
+<li class="h2"><a href="#sec-5">3. 预处理（Resolve / Prepare）</a></li>
+<li class="h2"><a href="#sec-6">4. 优化器</a></li>
+<li class="h3"><a href="#sec-7">4.1 逻辑优化（等价改写）</a></li>
+<li class="h3"><a href="#sec-8">4.2 物理优化（基于成本，CBO）</a></li>
+<li class="h3"><a href="#sec-9">4.3 统计信息（优化器的「眼睛」）</a></li>
+<li class="h3"><a href="#sec-10">4.4 优化器为什么会「选错索引」</a></li>
+<li class="h3"><a href="#sec-11">4.5 看优化器的「思考过程」：optimizer_trace</a></li>
+<li class="h2"><a href="#sec-12">5. 执行器</a></li>
+<li class="h3"><a href="#sec-13">5.1 取数模型</a></li>
+<li class="h3"><a href="#sec-14">5.2 8.0 的迭代器（Iterator）模型</a></li>
+<li class="h3"><a href="#sec-15">5.3 其他要点</a></li>
+<li class="h2"><a href="#sec-16">6. 执行计划 EXPLAIN</a></li>
+<li class="h3"><a href="#sec-17">6.1 四种用法</a></li>
+<li class="h3"><a href="#sec-18">6.2 传统格式各列</a></li>
+<li class="h3"><a href="#sec-19">6.3 type：访问类型（好 → 坏）</a></li>
+<li class="h3"><a href="#sec-20">6.4 key_len：判断联合索引用到了几列</a></li>
+<li class="h3"><a href="#sec-21">6.5 Extra：最需要读懂的一列</a></li>
+<li class="h3"><a href="#sec-22">6.6 EXPLAIN ANALYZE 怎么读</a></li>
+<li class="h3"><a href="#sec-23">6.7 EXPLAIN 的局限</a></li>
+<li class="h2"><a href="#sec-24">7. 常见执行方式</a></li>
+<li class="h3"><a href="#sec-25">7.1 回表与覆盖索引</a></li>
+<li class="h3"><a href="#sec-26">7.2 ICP：索引条件下推（Index Condition Pushdown）</a></li>
+<li class="h3"><a href="#sec-27">7.3 MRR：多范围读（Multi-Range Read）</a></li>
+<li class="h3"><a href="#sec-28">7.4 Join 相关：BNL / Hash Join / BKA</a></li>
+<li class="h3"><a href="#sec-29">7.5 Filesort：额外排序</a></li>
+<li class="h3"><a href="#sec-30">7.6 临时表：Using temporary</a></li>
+<li class="h2"><a href="#sec-31">8. 实战：读一个执行计划的步骤</a></li>
+<li class="h2"><a href="#sec-32">9. 8.0 与 5.7 的差异</a></li>
+<li class="h2"><a href="#sec-33">10. 常见面试题</a></li>
+<li class="h2"><a href="#sec-34">11. 本章小结</a></li>
+<li class="h2"><a href="#sec-35">相关内容</a></li>
+</ul></details></nav>
+<!-- page-head:end -->
+      <blockquote>
+      <p>适用：MySQL 8.0.x（与 5.7 的差异单独标注）。知识地图见 <a href="../overview.html">MySQL 知识总览</a>，上一章 <a href="../00-overview/mysql-layered-architecture.html">MySQL 总览：一条 SQL 的旅程</a>。</p>
+      <p>目标：说清一条 SQL 在 Server 层经历的四个阶段，理解优化器「为什么这样选」，并能熟练读懂执行计划。</p>
+      </blockquote>
+      <h2 id="sec-1">1. 本章全景</h2>
+      <!-- mermaid
+flowchart LR
+          SQL["SQL 文本"] --&gt; LEX["词法分析<br/>切分 token"]
+          LEX --&gt; PARSE["语法分析<br/>生成语法树"]
+          PARSE --&gt; RES["预处理（Resolve）<br/>名字解析 · 权限 · 语义检查"]
+          RES --&gt; OPT["优化器<br/>逻辑改写 + 基于成本选计划"]
+          OPT --&gt; EXEC["执行器<br/>迭代器逐行取数"]
+          EXEC --&gt; ENG["存储引擎<br/>Handler API"]
+          EXEC --&gt; OUT["结果集 / 影响行数"]
+      
+          STAT[("统计信息<br/>直方图 · 成本常量")] -.-> OPT
+          DD[("数据字典<br/>表 / 列 / 索引元数据")] -.-> RES
+-->
+<div class="diagram">
+<svg id="dg-a8ea9c6a" width="100%" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" class="flowchart" style="max-width: 1320px; background-color: transparent;" viewBox="4 4 1320 306.93585205078125" role="graphics-document document" aria-roledescription="flowchart-v2"><style>#dg-a8ea9c6a{font-family:trebuchet ms,verdana,arial,sans-serif;font-size:14px;fill:#333;}@keyframes edge-animation-frame{from{stroke-dashoffset:0;}}@keyframes dash{to{stroke-dashoffset:0;}}#dg-a8ea9c6a .edge-animation-slow{stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 50s linear infinite;stroke-linecap:round;}#dg-a8ea9c6a .edge-animation-fast{stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 20s linear infinite;stroke-linecap:round;}#dg-a8ea9c6a .error-icon{fill:#552222;}#dg-a8ea9c6a .error-text{fill:#552222;stroke:#552222;}#dg-a8ea9c6a .edge-thickness-normal{stroke-width:1px;}#dg-a8ea9c6a .edge-thickness-thick{stroke-width:3.5px;}#dg-a8ea9c6a .edge-pattern-solid{stroke-dasharray:0;}#dg-a8ea9c6a .edge-thickness-invisible{stroke-width:0;fill:none;}#dg-a8ea9c6a .edge-pattern-dashed{stroke-dasharray:3;}#dg-a8ea9c6a .edge-pattern-dotted{stroke-dasharray:2;}#dg-a8ea9c6a .marker{fill:#333333;stroke:#333333;}#dg-a8ea9c6a .marker.cross{stroke:#333333;}#dg-a8ea9c6a svg{font-family:trebuchet ms,verdana,arial,sans-serif;font-size:14px;}#dg-a8ea9c6a p{margin:0;}#dg-a8ea9c6a .label{font-family:trebuchet ms,verdana,arial,sans-serif;color:#333;}#dg-a8ea9c6a .cluster-label text{fill:#333;}#dg-a8ea9c6a .cluster-label span{color:#333;}#dg-a8ea9c6a .cluster-label span p{background-color:transparent;}#dg-a8ea9c6a .label text,#dg-a8ea9c6a span{fill:#333;color:#333;}#dg-a8ea9c6a .node rect,#dg-a8ea9c6a .node circle,#dg-a8ea9c6a .node ellipse,#dg-a8ea9c6a .node polygon,#dg-a8ea9c6a .node path{fill:#ECECFF;stroke:#9370DB;stroke-width:1px;}#dg-a8ea9c6a .rough-node .label text,#dg-a8ea9c6a .node .label text,#dg-a8ea9c6a .image-shape .label,#dg-a8ea9c6a .icon-shape .label{text-anchor:middle;}#dg-a8ea9c6a .node .katex path{fill:#000;stroke:#000;stroke-width:1px;}#dg-a8ea9c6a .rough-node .label,#dg-a8ea9c6a .node .label,#dg-a8ea9c6a .image-shape .label,#dg-a8ea9c6a .icon-shape .label{text-align:center;}#dg-a8ea9c6a .node.clickable{cursor:pointer;}#dg-a8ea9c6a .root .anchor path{fill:#333333!important;stroke-width:0;stroke:#333333;}#dg-a8ea9c6a .arrowheadPath{fill:#333333;}#dg-a8ea9c6a .edgePaths .path{stroke:#333333;stroke-width:1px;}#dg-a8ea9c6a .flowchart-link{stroke:#333333;fill:none;}#dg-a8ea9c6a .edgeLabel{background-color:rgba(232,232,232, 0.8);text-align:center;}#dg-a8ea9c6a .edgeLabel p{background-color:rgba(232,232,232, 0.8);}#dg-a8ea9c6a .edgeLabel rect{opacity:0.5;background-color:rgba(232,232,232, 0.8);fill:rgba(232,232,232, 0.8);}#dg-a8ea9c6a .labelBkg{background-color:rgba(232, 232, 232, 0.5);}#dg-a8ea9c6a .cluster rect{fill:#ffffde;stroke:#aaaa33;stroke-width:1px;}#dg-a8ea9c6a .cluster text{fill:#333;}#dg-a8ea9c6a .cluster span{color:#333;}#dg-a8ea9c6a .node .collapsed-indicator{fill:#aaaa33;stroke:none;opacity:0.6;}#dg-a8ea9c6a .node .collapsed-separator{stroke:#aaaa33;stroke-width:0.75px;}#dg-a8ea9c6a div.mermaidTooltip{position:absolute;text-align:center;max-width:200px;padding:2px;font-family:trebuchet ms,verdana,arial,sans-serif;font-size:12px;background:hsl(80, 100%, 96.2745098039%);border:1px solid #aaaa33;border-radius:2px;pointer-events:none;z-index:100;}#dg-a8ea9c6a .flowchartTitleText{text-anchor:middle;font-size:18px;fill:#333;}#dg-a8ea9c6a rect.text{fill:none;stroke-width:0;}#dg-a8ea9c6a .icon-shape,#dg-a8ea9c6a .image-shape{background-color:rgba(232,232,232, 0.8);text-align:center;}#dg-a8ea9c6a .icon-shape p,#dg-a8ea9c6a .image-shape p{background-color:rgba(232,232,232, 0.8);padding:2px;}#dg-a8ea9c6a .icon-shape .label rect,#dg-a8ea9c6a .image-shape .label rect{opacity:0.5;background-color:rgba(232,232,232, 0.8);fill:rgba(232,232,232, 0.8);}#dg-a8ea9c6a .label-icon{display:inline-block;height:1em;overflow:visible;vertical-align:-0.125em;}#dg-a8ea9c6a .node .label-icon path{fill:currentColor;stroke:revert;stroke-width:revert;}#dg-a8ea9c6a .node .neo-node{stroke:#9370DB;}#dg-a8ea9c6a [data-look="neo"].node rect,#dg-a8ea9c6a [data-look="neo"].cluster rect,#dg-a8ea9c6a [data-look="neo"].node polygon{stroke:#9370DB;filter:drop-shadow(1px 2px 2px rgba(185, 185, 185, 1));}#dg-a8ea9c6a [data-look="neo"].swimlane.cluster rect{filter:none;}#dg-a8ea9c6a [data-look="neo"].node path{stroke:#9370DB;stroke-width:1px;}#dg-a8ea9c6a [data-look="neo"].node .outer-path{filter:drop-shadow(1px 2px 2px rgba(185, 185, 185, 1));}#dg-a8ea9c6a [data-look="neo"].node .neo-line path{stroke:#9370DB;filter:none;}#dg-a8ea9c6a [data-look="neo"].node circle{stroke:#9370DB;filter:drop-shadow(1px 2px 2px rgba(185, 185, 185, 1));}#dg-a8ea9c6a [data-look="neo"].node circle .state-start{fill:#000000;}#dg-a8ea9c6a [data-look="neo"].icon-shape .icon{fill:#9370DB;filter:drop-shadow(1px 2px 2px rgba(185, 185, 185, 1));}#dg-a8ea9c6a [data-look="neo"].icon-shape .icon-neo path{stroke:#9370DB;filter:drop-shadow(1px 2px 2px rgba(185, 185, 185, 1));}#dg-a8ea9c6a :root{--mermaid-font-family:"trebuchet ms",verdana,arial,sans-serif;}</style><g><marker id="dg-a8ea9c6a_flowchart-v2-pointEnd" class="marker flowchart-v2" viewBox="0 0 10 10" refX="5" refY="5" markerUnits="userSpaceOnUse" markerWidth="8" markerHeight="8" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"/></marker><marker id="dg-a8ea9c6a_flowchart-v2-pointStart" class="marker flowchart-v2" viewBox="0 0 10 10" refX="4.5" refY="5" markerUnits="userSpaceOnUse" markerWidth="8" markerHeight="8" orient="auto"><path d="M 0 5 L 10 10 L 10 0 z" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"/></marker><marker id="dg-a8ea9c6a_flowchart-v2-pointEnd-margin" class="marker flowchart-v2" viewBox="0 0 11.5 14" refX="11.5" refY="7" markerUnits="userSpaceOnUse" markerWidth="10.5" markerHeight="14" orient="auto"><path d="M 0 0 L 11.5 7 L 0 14 z" class="arrowMarkerPath" style="stroke-width: 0; stroke-dasharray: 1, 0;"/></marker><marker id="dg-a8ea9c6a_flowchart-v2-pointStart-margin" class="marker flowchart-v2" viewBox="0 0 11.5 14" refX="1" refY="7" markerUnits="userSpaceOnUse" markerWidth="11.5" markerHeight="14" orient="auto"><polygon points="0,7 11.5,14 11.5,0" class="arrowMarkerPath" style="stroke-width: 0; stroke-dasharray: 1, 0;"/></marker><marker id="dg-a8ea9c6a_flowchart-v2-circleEnd" class="marker flowchart-v2" viewBox="0 0 10 10" refX="11" refY="5" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"/></marker><marker id="dg-a8ea9c6a_flowchart-v2-circleStart" class="marker flowchart-v2" viewBox="0 0 10 10" refX="-1" refY="5" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"/></marker><marker id="dg-a8ea9c6a_flowchart-v2-circleEnd-margin" class="marker flowchart-v2" viewBox="0 0 10 10" refY="5" refX="12.25" markerUnits="userSpaceOnUse" markerWidth="14" markerHeight="14" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 0; stroke-dasharray: 1, 0;"/></marker><marker id="dg-a8ea9c6a_flowchart-v2-circleStart-margin" class="marker flowchart-v2" viewBox="0 0 10 10" refX="-2" refY="5" markerUnits="userSpaceOnUse" markerWidth="14" markerHeight="14" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 0; stroke-dasharray: 1, 0;"/></marker><marker id="dg-a8ea9c6a_flowchart-v2-crossEnd" class="marker cross flowchart-v2" viewBox="0 0 11 11" refX="12" refY="5.2" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><path d="M 1,1 l 9,9 M 10,1 l -9,9" class="arrowMarkerPath" style="stroke-width: 2; stroke-dasharray: 1, 0;"/></marker><marker id="dg-a8ea9c6a_flowchart-v2-crossStart" class="marker cross flowchart-v2" viewBox="0 0 11 11" refX="-1" refY="5.2" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><path d="M 1,1 l 9,9 M 10,1 l -9,9" class="arrowMarkerPath" style="stroke-width: 2; stroke-dasharray: 1, 0;"/></marker><marker id="dg-a8ea9c6a_flowchart-v2-crossEnd-margin" class="marker cross flowchart-v2" viewBox="0 0 15 15" refX="17.7" refY="7.5" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto"><path d="M 1,1 L 14,14 M 1,14 L 14,1" class="arrowMarkerPath" style="stroke-width: 2.5;"/></marker><marker id="dg-a8ea9c6a_flowchart-v2-crossStart-margin" class="marker cross flowchart-v2" viewBox="0 0 15 15" refX="-3.5" refY="7.5" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto"><path d="M 1,1 L 14,14 M 1,14 L 14,1" class="arrowMarkerPath" style="stroke-width: 2.5; stroke-dasharray: 1, 0;"/></marker><g class="root"><g class="clusters"/><g class="edges edgePaths"><path d="M164,45L200,45" id="dg-a8ea9c6a-L_SQL_LEX_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style="stroke-dasharray: 0 0 32 4; stroke-dashoffset: 0;;" data-edge="true" data-et="edge" data-id="L_SQL_LEX_0" data-points="W3sieCI6MTY0LCJ5Ijo0NX0seyJ4IjoyMDQsInkiOjQ1fV0=" data-look="neo" marker-end="url(#dg-a8ea9c6a_flowchart-v2-pointEnd-margin)"/><path d="M356,45L392,45" id="dg-a8ea9c6a-L_LEX_PARSE_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style="stroke-dasharray: 0 0 32 4; stroke-dashoffset: 0;;" data-edge="true" data-et="edge" data-id="L_LEX_PARSE_0" data-points="W3sieCI6MzU2LCJ5Ijo0NX0seyJ4IjozOTYsInkiOjQ1fV0=" data-look="neo" marker-end="url(#dg-a8ea9c6a_flowchart-v2-pointEnd-margin)"/><path d="M548,45L560.9289321881345,45Q568,45 568,52.071067811865476L568,95.04943593162412Q568,102.12050374348959 575.0710678118655,102.12050374348959L584,102.12050374348959" id="dg-a8ea9c6a-L_PARSE_RES_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style="stroke-dasharray: 0 0 83.792236328125 4; stroke-dashoffset: 0;;" data-edge="true" data-et="edge" data-id="L_PARSE_RES_0" data-points="W3sieCI6NTQ4LCJ5Ijo0NX0seyJ4Ijo1NjgsInkiOjQ1fSx7IngiOjU2OCwieSI6MTAyLjEyMDUwMzc0MzQ4OTU5fSx7IngiOjU4OCwieSI6MTAyLjEyMDUwMzc0MzQ4OTU5fV0=" data-look="neo" marker-end="url(#dg-a8ea9c6a_flowchart-v2-pointEnd-margin)"/><path d="M740,113.28717041015625L752.9289321881345,113.28717041015625Q760,113.28717041015625 760,120.35823822202173L760,163.336608249129Q760,170.40767606099448 767.0710678118655,170.40767606099448L776,170.40767606099448" id="dg-a8ea9c6a-L_RES_OPT_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style="stroke-dasharray: 0 0 83.792236328125 4; stroke-dashoffset: 0;;" data-edge="true" data-et="edge" data-id="L_RES_OPT_0" data-points="W3sieCI6NzQwLCJ5IjoxMTMuMjg3MTcwNDEwMTU2MjV9LHsieCI6NzYwLCJ5IjoxMTMuMjg3MTcwNDEwMTU2MjV9LHsieCI6NzYwLCJ5IjoxNzAuNDA3Njc2MDYwOTk0NDh9LHsieCI6NzgwLCJ5IjoxNzAuNDA3Njc2MDYwOTk0NDh9XQ==" data-look="neo" marker-end="url(#dg-a8ea9c6a_flowchart-v2-pointEnd-margin)"/><path d="M932,181.57434272766113L968,181.57434272766113" id="dg-a8ea9c6a-L_OPT_EXEC_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style="stroke-dasharray: 0 0 32 4; stroke-dashoffset: 0;;" data-edge="true" data-et="edge" data-id="L_OPT_EXEC_0" data-points="W3sieCI6OTMyLCJ5IjoxODEuNTc0MzQyNzI3NjYxMTN9LHsieCI6OTcyLCJ5IjoxODEuNTc0MzQyNzI3NjYxMTN9XQ==" data-look="neo" marker-end="url(#dg-a8ea9c6a_flowchart-v2-pointEnd-margin)"/><path d="M1124,173.90767606099448L1136.9289321881345,173.90767606099448Q1144,173.90767606099448 1144,166.836608249129L1144,140.8954105395266Q1144,133.82434272766113 1151.0710678118655,133.82434272766113L1160,133.82434272766113" id="dg-a8ea9c6a-L_EXEC_ENG_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style="stroke-dasharray: 0 0 66.75502014160156 4; stroke-dashoffset: 0;;" data-edge="true" data-et="edge" data-id="L_EXEC_ENG_0" data-points="W3sieCI6MTEyNCwieSI6MTczLjkwNzY3NjA2MDk5NDQ4fSx7IngiOjExNDQsInkiOjE3My45MDc2NzYwNjA5OTQ0OH0seyJ4IjoxMTQ0LCJ5IjoxMzMuODI0MzQyNzI3NjYxMTN9LHsieCI6MTE2NCwieSI6MTMzLjgyNDM0MjcyNzY2MTEzfV0=" data-look="neo" marker-end="url(#dg-a8ea9c6a_flowchart-v2-pointEnd-margin)"/><path d="M1124,189.24100939432782L1136.9289321881345,189.24100939432782Q1144,189.24100939432782 1144,196.3120772061933L1144,222.25327491579566Q1144,229.32434272766113 1151.0710678118655,229.32434272766113L1160,229.32434272766113" id="dg-a8ea9c6a-L_EXEC_OUT_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style="stroke-dasharray: 0 0 66.75503540039062 4; stroke-dashoffset: 0;;" data-edge="true" data-et="edge" data-id="L_EXEC_OUT_0" data-points="W3sieCI6MTEyNCwieSI6MTg5LjI0MTAwOTM5NDMyNzgyfSx7IngiOjExNDQsInkiOjE4OS4yNDEwMDkzOTQzMjc4Mn0seyJ4IjoxMTQ0LCJ5IjoyMjkuMzI0MzQyNzI3NjYxMTN9LHsieCI6MTE2NCwieSI6MjI5LjMyNDM0MjcyNzY2MTEzfV0=" data-look="neo" marker-end="url(#dg-a8ea9c6a_flowchart-v2-pointEnd-margin)"/><path d="M740,249.86151504516602L752.9289321881345,249.86151504516602Q760,249.86151504516602 760,242.79044723330054L760,199.8120772061933Q760,192.74100939432782 767.0710678118655,192.74100939432782L776,192.74100939432782" id="dg-a8ea9c6a-L_STAT_OPT_0" class="edge-thickness-normal edge-pattern-dotted edge-thickness-normal edge-pattern-solid flowchart-link" style="stroke-dasharray: 0 0 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 4; stroke-dashoffset: 0;;" data-edge="true" data-et="edge" data-id="L_STAT_OPT_0" data-points="W3sieCI6NzQwLCJ5IjoyNDkuODYxNTE1MDQ1MTY2MDJ9LHsieCI6NzYwLCJ5IjoyNDkuODYxNTE1MDQ1MTY2MDJ9LHsieCI6NzYwLCJ5IjoxOTIuNzQxMDA5Mzk0MzI3ODJ9LHsieCI6NzgwLCJ5IjoxOTIuNzQxMDA5Mzk0MzI3ODJ9XQ==" data-look="neo" marker-end="url(#dg-a8ea9c6a_flowchart-v2-pointEnd-margin)"/><path d="M548,181.5743408203125L560.9289321881345,181.5743408203125Q568,181.5743408203125 568,174.50327300844702L568,131.52490488868838Q568,124.45383707682291 575.0710678118655,124.45383707682291L584,124.45383707682291" id="dg-a8ea9c6a-L_DD_RES_0" class="edge-thickness-normal edge-pattern-dotted edge-thickness-normal edge-pattern-solid flowchart-link" style="stroke-dasharray: 0 0 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 4; stroke-dashoffset: 0;;" data-edge="true" data-et="edge" data-id="L_DD_RES_0" data-points="W3sieCI6NTQ4LCJ5IjoxODEuNTc0MzQwODIwMzEyNX0seyJ4Ijo1NjgsInkiOjE4MS41NzQzNDA4MjAzMTI1fSx7IngiOjU2OCwieSI6MTI0LjQ1MzgzNzA3NjgyMjkxfSx7IngiOjU4OCwieSI6MTI0LjQ1MzgzNzA3NjgyMjkxfV0=" data-look="neo" marker-end="url(#dg-a8ea9c6a_flowchart-v2-pointEnd-margin)"/></g><g class="edgeLabels"/><g class="nodes"><g class="node default" id="dg-a8ea9c6a-flowchart-SQL-0" data-look="neo" transform="translate(88, 45)"><rect class="basic label-container" style="" x="-76" y="-22.5" width="152" height="45"/><g class="label" style="" transform="translate(-60, -10.5)"><rect/><foreignObject width="120" height="21"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table; white-space: nowrap; line-height: 1.5; max-width: 120px; text-align: center; width: 120px;"><span class="nodeLabel"><p>SQL 文本</p></span></div></foreignObject></g></g><g class="node default" id="dg-a8ea9c6a-flowchart-LEX-1" data-look="neo" transform="translate(280, 45)"><rect class="basic label-container" style="" x="-76" y="-33" width="152" height="66"/><g class="label" style="" transform="translate(-60, -21)"><rect/><foreignObject width="120" height="42"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table; white-space: nowrap; line-height: 1.5; max-width: 120px; text-align: center; width: 120px;"><span class="nodeLabel"><p>词法分析<br />切分 token</p></span></div></foreignObject></g></g><g class="node default" id="dg-a8ea9c6a-flowchart-PARSE-3" data-look="neo" transform="translate(472, 45)"><rect class="basic label-container" style="" x="-76" y="-33" width="152" height="66"/><g class="label" style="" transform="translate(-60, -21)"><rect/><foreignObject width="120" height="42"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table; white-space: nowrap; line-height: 1.5; max-width: 120px; text-align: center; width: 120px;"><span class="nodeLabel"><p>语法分析<br />生成语法树</p></span></div></foreignObject></g></g><g class="node default" id="dg-a8ea9c6a-flowchart-RES-5" data-look="neo" transform="translate(664, 113.28717041015625)"><rect class="basic label-container" style="" x="-76" y="-43.5" width="152" height="87"/><g class="label" style="" transform="translate(-60, -31.5)"><rect/><foreignObject width="120" height="63"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table; white-space: break-spaces; line-height: 1.5; max-width: 120px; text-align: center; width: 120px;"><span class="nodeLabel"><p>预处理（Resolve）<br />名字解析 · 权限 · 语义检查</p></span></div></foreignObject></g></g><g class="node default" id="dg-a8ea9c6a-flowchart-OPT-7" data-look="neo" transform="translate(856, 181.57434272766113)"><rect class="basic label-container" style="" x="-76" y="-43.5" width="152" height="87"/><g class="label" style="" transform="translate(-60, -31.5)"><rect/><foreignObject width="120" height="63"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table; white-space: break-spaces; line-height: 1.5; max-width: 120px; text-align: center; width: 120px;"><span class="nodeLabel"><p>优化器<br />逻辑改写 + 基于成本选计划</p></span></div></foreignObject></g></g><g class="node default" id="dg-a8ea9c6a-flowchart-EXEC-9" data-look="neo" transform="translate(1048, 181.57434272766113)"><rect class="basic label-container" style="" x="-76" y="-33" width="152" height="66"/><g class="label" style="" transform="translate(-60, -21)"><rect/><foreignObject width="120" height="42"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table; white-space: nowrap; line-height: 1.5; max-width: 120px; text-align: center; width: 120px;"><span class="nodeLabel"><p>执行器<br />迭代器逐行取数</p></span></div></foreignObject></g></g><g class="node default" id="dg-a8ea9c6a-flowchart-ENG-11" data-look="neo" transform="translate(1240, 133.82434272766113)"><rect class="basic label-container" style="" x="-76" y="-33" width="152" height="66"/><g class="label" style="" transform="translate(-60, -21)"><rect/><foreignObject width="120" height="42"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table; white-space: nowrap; line-height: 1.5; max-width: 120px; text-align: center; width: 120px;"><span class="nodeLabel"><p>存储引擎<br />Handler API</p></span></div></foreignObject></g></g><g class="node default" id="dg-a8ea9c6a-flowchart-OUT-13" data-look="neo" transform="translate(1240, 229.32434272766113)"><rect class="basic label-container" style="" x="-76" y="-22.5" width="152" height="45"/><g class="label" style="" transform="translate(-60, -10.5)"><rect/><foreignObject width="120" height="21"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table; white-space: nowrap; line-height: 1.5; max-width: 120px; text-align: center; width: 120px;"><span class="nodeLabel"><p>结果集 / 影响行数</p></span></div></foreignObject></g></g><g class="node default" id="dg-a8ea9c6a-flowchart-STAT-14" data-look="neo" transform="translate(668, 249.86151504516602)"><path d="M0,13.382899628252789 a72,13.382899628252789 0,0,0 144,0 a72,13.382899628252789 0,0,0 -144,0 l0,79.38289962825279 a72,13.382899628252789 0,0,0 144,0 l0,-79.38289962825279" class="basic label-container outer-path" style="" transform="translate(-72, -53.07434944237918)"/><g class="label" style="" transform="translate(-60, -11)"><rect/><foreignObject width="120" height="42"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table; white-space: nowrap; line-height: 1.5; max-width: 120px; text-align: center; width: 120px;"><span class="nodeLabel"><p>统计信息<br />直方图 · 成本常量</p></span></div></foreignObject></g></g><g class="node default" id="dg-a8ea9c6a-flowchart-DD-16" data-look="neo" transform="translate(476, 181.5743408203125)"><path d="M0,13.382899628252789 a72,13.382899628252789 0,0,0 144,0 a72,13.382899628252789 0,0,0 -144,0 l0,100.38289962825279 a72,13.382899628252789 0,0,0 144,0 l0,-100.38289962825279" class="basic label-container outer-path" style="" transform="translate(-72, -63.57434944237918)"/><g class="label" style="" transform="translate(-60, -21.5)"><rect/><foreignObject width="120" height="63"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table; white-space: break-spaces; line-height: 1.5; max-width: 120px; text-align: center; width: 120px;"><span class="nodeLabel"><p>数据字典<br />表 / 列 / 索引元数据</p></span></div></foreignObject></g></g></g></g></g><defs><filter id="dg-a8ea9c6a-drop-shadow" height="130%" width="130%"><feDropShadow dx="4" dy="4" stdDeviation="0" flood-opacity="0.06" flood-color="#000000"/></filter></defs><defs><filter id="dg-a8ea9c6a-drop-shadow-small" height="150%" width="150%"><feDropShadow dx="2" dy="2" stdDeviation="0" flood-opacity="0.06" flood-color="#000000"/></filter></defs></svg>
+</div>
+      <div class="table-wrap"><table>
+      <thead><tr><th>阶段</th><th>回答的问题</th><th>典型报错</th></tr></thead>
+      <tbody><tr><td>解析</td><td>这句话符合语法吗</td><td><code>1064 You have an error in your SQL syntax</code></td></tr>
+      <tr><td>预处理</td><td>表和列存在吗，有权限吗</td><td><code>1146 Table doesn't exist</code>、<code>1054 Unknown column</code>、<code>1052 Column ambiguous</code></td></tr>
+      <tr><td>优化</td><td>用什么办法执行最省</td><td>无报错，但可能「选错索引」导致慢</td></tr>
+      <tr><td>执行</td><td>按方案取数、过滤、返回</td><td>运行期错误（超时、数据截断、除零等）</td></tr></tbody>
+      </table></div>
+      <h2 id="sec-2">2. 解析器</h2>
+      <h3 id="sec-3">2.1 做什么</h3>
+      <ul>
+      <li><strong>词法分析</strong>：把字符串切成 token，识别关键字、标识符、字面量、运算符。</li>
+      <li><strong>语法分析</strong>：按 MySQL 语法规则（基于 bison 生成）把 token 组装成<strong>语法树（AST / parse tree）</strong>，语法不合法在这里直接报 1064。</li>
+      </ul>
+      <h3 id="sec-4">2.2 要留意的点</h3>
+      <div class="table-wrap"><table>
+      <thead><tr><th>点</th><th>说明</th></tr></thead>
+      <tbody><tr><td>保留字</td><td>用保留字做表名 / 列名需要加反引号。<strong>8.0 新增了保留字</strong>（如 <code>RANK</code>、<code>GROUPS</code>、<code>WINDOW</code>、<code>LATERAL</code> 等），从 5.7 升级时旧 SQL 可能突然报语法错</td></tr>
+      <tr><td><code>sql_mode</code></td><td>影响解析行为，如 <code>ANSI_QUOTES</code>（双引号变标识符）、<code>PIPES_AS_CONCAT</code>（<code>||</code> 变字符串连接）</td></tr>
+      <tr><td>预编译语句</td><td><code>PREPARE</code> / <code>EXECUTE</code>（驱动里的 server-side prepared statement）只解析一次，后续只传参数；同时是防 SQL 注入的主要手段。注意 <strong>MySQL 没有跨语句的执行计划缓存</strong>，每次执行仍会重新优化</td></tr>
+      <tr><td>报错位置</td><td>报错信息里 <code>near '...'</code> 指出的是<strong>解析器卡住的位置</strong>，真正的错误往往在它前面一点</td></tr></tbody>
+      </table></div>
+      <h2 id="sec-5">3. 预处理（Resolve / Prepare）</h2>
+      <p>语法正确后，Server 要把语法树「绑定」到真实对象上：</p>
+      <ol>
+      <li><strong>名字解析</strong>：表、列、别名是否存在、是否有歧义；<code>SELECT *</code> 展开成具体列；视图展开成底层查询。</li>
+      <li><strong>权限检查</strong>：对表 / 列的权限（连接阶段只做了认证和全局权限）。</li>
+      <li><strong>打开表并加元数据锁（MDL）</strong>：这也是 DDL 和长事务互相阻塞的根源，详见锁章节。</li>
+      <li><strong>语义检查与类型推导</strong>：确定每个表达式的类型，决定哪里会发生<strong>隐式类型转换</strong>（这是「索引失效」的常见来源之一）。</li>
+      <li><strong>部分逻辑改写</strong>：如子查询转换为半连接（semijoin）、视图 / 派生表合并。这部分与优化器的逻辑优化衔接紧密，不同版本归属略有差异，理解为「正式选计划前的等价改写」即可。</li>
+      </ol>
+      <h2 id="sec-6">4. 优化器</h2>
+      <p>优化器的任务：<strong>在语义等价的前提下，找到成本最低的执行计划</strong>。分两层：</p>
+      <h3 id="sec-7">4.1 逻辑优化（等价改写）</h3>
+      <div class="table-wrap"><table>
+      <thead><tr><th>改写</th><th>示例 / 说明</th></tr></thead>
+      <tbody><tr><td>常量折叠与传播</td><td><code>WHERE a = 1 + 2</code> → <code>a = 3</code>；<code>a = b AND b = 5</code> → <code>a = 5 AND b = 5</code></td></tr>
+      <tr><td>无用条件消除</td><td><code>WHERE 1=1</code>、恒假条件直接得到 <code>Impossible WHERE</code></td></tr>
+      <tr><td>外连接转内连接</td><td><code>LEFT JOIN</code> 后 <code>WHERE</code> 中对右表有非空条件，则等价于 <code>INNER JOIN</code>，从而获得更多 join 顺序可选</td></tr>
+      <tr><td>子查询优化</td><td><code>IN</code> / <code>EXISTS</code> 子查询转 <strong>semijoin</strong>（策略：FirstMatch、LooseScan、Materialization、DuplicateWeedout）；不能转换时物化（Materialization）或按相关子查询执行</td></tr>
+      <tr><td>视图 / 派生表合并</td><td><code>derived_merge</code>：把派生表直接合并进外层查询，避免物化；8.0.22+ 还支持把条件<strong>下推</strong>到物化的派生表里</td></tr>
+      <tr><td>分区裁剪</td><td>根据条件排除无关分区</td></tr></tbody>
+      </table></div>
+      <h3 id="sec-8">4.2 物理优化（基于成本，CBO）</h3>
+      <p>核心是枚举候选方案并<strong>估算成本，选最小的</strong>。要决定三件事：</p>
+      <ol>
+      <li><strong>每个表怎么访问</strong>：全表扫描、索引扫描、索引范围扫描、索引等值查找、index merge……</li>
+      <li><strong>多表 join 的顺序</strong>：n 个表有 n! 种顺序，MySQL 用贪心 + 剪枝（<code>optimizer_search_depth</code>、<code>optimizer_prune_level</code>）控制搜索量，表很多时优化本身也有开销。</li>
+      <li><strong>join 算法</strong>：Nested Loop、Hash Join（8.0.18+）、BKA 等（详见查询优化章）。</li>
+      </ol>
+      <p><strong>成本模型</strong></p>
+      <ul>
+      <li>总成本 ≈ <strong>IO 成本 + CPU 成本</strong>。IO 按读页数估，CPU 按处理行数、比较次数、临时表代价等估。</li>
+      <li>单位成本常量存在系统表 <code>mysql.server_cost</code> 和 <code>mysql.engine_cost</code>，可以调整（生产上一般不动）。</li>
+      <li><code>EXPLAIN FORMAT=JSON</code> 的 <code>cost_info</code> 里能看到 <code>query_cost</code>、<code>read_cost</code>、<code>eval_cost</code>、<code>prefix_cost</code>。</li>
+      </ul>
+      <h3 id="sec-9">4.3 统计信息（优化器的「眼睛」）</h3>
+      <p>优化器看不到数据，只能靠统计信息估算，<strong>估算偏差是选错计划的头号原因</strong>。</p>
+      <div class="table-wrap"><table>
+      <thead><tr><th>统计来源</th><th>说明</th></tr></thead>
+      <tbody><tr><td>表统计</td><td>行数、数据页数，存于 <code>mysql.innodb_table_stats</code></td></tr>
+      <tr><td>索引统计</td><td>每个索引的<strong>基数（Cardinality，不同值个数的估计）</strong>，存于 <code>mysql.innodb_index_stats</code>；<code>SHOW INDEX FROM t</code> 可见</td></tr>
+      <tr><td>采样方式</td><td>持久化统计（<code>innodb_stats_persistent=ON</code>，默认）按<strong>随机采样若干页</strong>估算，采样页数 <code>innodb_stats_persistent_sample_pages</code>（默认 20）</td></tr>
+      <tr><td>更新时机</td><td>表中约 10% 行变动后自动重算（<code>innodb_stats_auto_recalc</code>）；也可手动 <code>ANALYZE TABLE t</code></td></tr>
+      <tr><td>直方图（8.0）</td><td>针对<strong>没有索引的列</strong>记录值分布：<code>ANALYZE TABLE t UPDATE HISTOGRAM ON col WITH 100 BUCKETS;</code>，数据在 <code>information_schema.COLUMN_STATISTICS</code>。<strong>不会自动更新</strong>，数据分布变了要手动重建</td></tr>
+      <tr><td>索引潜水（index dive）</td><td>对 <code>range</code> / <code>IN</code> 条件，优化器直接去索引树里数匹配行数，比统计更准；但 <code>IN</code> 值个数超过 <code>eq_range_index_dive_limit</code>（默认 200）后退化为用索引统计，估算变粗</td></tr></tbody>
+      </table></div>
+      <h3 id="sec-10">4.4 优化器为什么会「选错索引」</h3>
+      <div class="table-wrap"><table>
+      <thead><tr><th>原因</th><th>说明</th></tr></thead>
+      <tbody><tr><td>统计信息不准</td><td>采样偏差、数据分布倾斜、统计过期</td></tr>
+      <tr><td>回表成本被低估 / 高估</td><td>二级索引命中行数多时，回表是大量随机 IO；经验上命中比例较高（量级上到总行数的两三成）时，全表扫描可能比走索引更省，这并不是固定阈值</td></tr>
+      <tr><td>附带因素</td><td>为避免排序（<code>ORDER BY ... LIMIT</code>）而选了有序的索引，反而扫了很多行</td></tr>
+      <tr><td>条件无法估算</td><td>函数、表达式、隐式转换导致无法用索引估行数</td></tr></tbody>
+      </table></div>
+      <p><strong>处理手段（由轻到重）</strong></p>
+      <ol>
+      <li><code>ANALYZE TABLE</code> 刷新统计；倾斜列建直方图。</li>
+      <li>改写 SQL，让条件可以用上索引，必要时补 / 调整索引（联合索引顺序、覆盖索引）。</li>
+      <li>给优化器「提示」：<ul>
+      <li>索引提示：<code>USE INDEX</code> / <code>FORCE INDEX</code> / <code>IGNORE INDEX</code>。</li>
+      <li><strong>优化器 Hint（5.7.7+）</strong>：<code>SELECT /*+ INDEX(t idx_a) */ ...</code>，另有 <code>NO_INDEX</code>、<code>JOIN_ORDER</code>、<code>HASH_JOIN</code> / <code>NO_HASH_JOIN</code>、<code>MAX_EXECUTION_TIME(ms)</code>（只对 SELECT）、<code>SET_VAR(var=val)</code>（仅对当前语句改变量）。</li>
+      </ul></li>
+      <li>调整 <code>optimizer_switch</code> 里的开关（如 <code>index_merge</code>、<code>mrr</code>、<code>hash_join</code>），影响全局或会话的优化策略，需谨慎。</li>
+      </ol>
+      <blockquote>
+      <p>强制索引是「治标」：数据分布变化后可能反而成为问题，优先让统计和索引设计合理。</p>
+      </blockquote>
+      <h3 id="sec-11">4.5 看优化器的「思考过程」：optimizer_trace</h3>
+      <p><code>EXPLAIN</code> 只给结果，想知道<strong>为什么</strong>选这个方案，用 trace：</p>
+      <pre><code class="language-sql hljs"><span class="hljs-keyword">SET</span> optimizer_trace <span class="hljs-operator">=</span> <span class="hljs-string">&#x27;enabled=on&#x27;</span>;
+<span class="hljs-comment">-- 执行要分析的语句</span>
+<span class="hljs-keyword">SELECT</span> ... ;
+<span class="hljs-keyword">SELECT</span> trace <span class="hljs-keyword">FROM</span> information_schema.OPTIMIZER_TRACE\G
+<span class="hljs-keyword">SET</span> optimizer_trace <span class="hljs-operator">=</span> <span class="hljs-string">&#x27;enabled=off&#x27;</span>;</code></pre>
+      <p>输出是 JSON，主要关注三个阶段：</p>
+      <div class="table-wrap"><table>
+      <thead><tr><th>阶段</th><th>内容</th></tr></thead>
+      <tbody><tr><td><code>join_preparation</code></td><td>预处理、语法树改写的结果</td></tr>
+      <tr><td><code>join_optimization</code></td><td>条件处理（<code>condition_processing</code>）、各表行数估计（<code>rows_estimation</code>）、每种候选访问方式的成本（<code>considered_access_paths</code>）、候选 join 顺序（<code>considered_execution_plans</code>）、最终选择</td></tr>
+      <tr><td><code>join_execution</code></td><td>执行阶段信息，如排序（<code>filesort_summary</code>：用了多少个临时文件、排序算法）</td></tr></tbody>
+      </table></div>
+      <p>trace 过长被截断时，调大 <code>optimizer_trace_max_mem_size</code>。</p>
+      <h2 id="sec-12">5. 执行器</h2>
+      <h3 id="sec-13">5.1 取数模型</h3>
+      <p>执行器按优化器给出的计划，<strong>通过 Handler API 向引擎要数据，再在 Server 层完成过滤、关联、排序、聚合、返回</strong>。</p>
+      <ul>
+      <li><strong>无可用索引</strong>：反复调「读下一行」做全表扫描，每行在 Server 层判断 <code>WHERE</code>。</li>
+      <li><strong>有索引</strong>：调「按索引找到第一个满足条件的行」，再「读下一个」，直到条件不满足。</li>
+      <li>条件能否在引擎层提前判断（索引条件下推 ICP），决定了有多少无效行被传回 Server 层（见第 7 节）。</li>
+      </ul>
+      <h3 id="sec-14">5.2 8.0 的迭代器（Iterator）模型</h3>
+      <p>8.0 逐步把执行器改造成 <strong>Volcano 迭代器模型</strong>：执行计划是一棵由迭代器组成的树，每个迭代器实现 <code>Init()</code> / <code>Read()</code>，上层不断向下层「拉」一行。典型迭代器：表扫描、索引扫描、Filter、Nested Loop Join、Hash Join、Sort、Aggregate、Limit……</p>
+      <p>好处：结构统一、便于实现 Hash Join 与 <code>EXPLAIN ANALYZE</code>。<code>EXPLAIN FORMAT=TREE</code> 直接展示这棵树：</p>
+      <pre><code>-&gt; Limit: 10 row(s)
+    -&gt; Sort: o.amount DESC, limit input to 10 row(s) per chunk
+        -&gt; Filter: (o.status = 1)
+            -&gt; Table scan on o</code></pre>
+      <p>（示意，具体文字与数值随版本和环境而变。读法：<strong>最内层最先执行</strong>，数据自下向上流动。）</p>
+      <h3 id="sec-15">5.3 其他要点</h3>
+      <ul>
+      <li><strong>结果流式返回</strong>：边算边发（见第 0 章），<code>LIMIT</code> 满足后立即停止，不会继续扫描。</li>
+      <li>慢日志的 <code>rows_examined</code> 大致是执行器调用引擎取行的次数。</li>
+      <li>写操作（INSERT / UPDATE / DELETE）的执行器流程多了加锁、undo、redo、binlog，见事务、锁、日志章节。</li>
+      </ul>
+      <h2 id="sec-16">6. 执行计划 EXPLAIN</h2>
+      <h3 id="sec-17">6.1 四种用法</h3>
+      <div class="table-wrap"><table>
+      <thead><tr><th>命令</th><th>说明</th></tr></thead>
+      <tbody><tr><td><code>EXPLAIN</code></td><td>传统表格，<strong>只估算不执行</strong></td></tr>
+      <tr><td><code>EXPLAIN FORMAT=JSON</code></td><td>含成本（<code>cost_info</code>）、使用的索引列、附加条件等更详细信息</td></tr>
+      <tr><td><code>EXPLAIN FORMAT=TREE</code>（8.0.16+）</td><td>迭代器树，直观看到执行顺序和 join 方式</td></tr>
+      <tr><td><code>EXPLAIN ANALYZE</code>（8.0.18+）</td><td><strong>真正执行语句</strong>并给出实际耗时、实际行数、循环次数，输出为 TREE 格式</td></tr></tbody>
+      </table></div>
+      <p>另有 <code>EXPLAIN FOR CONNECTION &lt;id&gt;</code>，查看正在执行的会话的计划。</p>
+      <blockquote>
+      <p><strong><code>EXPLAIN ANALYZE</code> 会真实执行语句</strong>，用于 UPDATE / DELETE 之类写语句要格外小心，先在测试环境或确认可回滚时使用。</p>
+      </blockquote>
+      <h3 id="sec-18">6.2 传统格式各列</h3>
+      <p>示例表：</p>
+      <pre><code class="language-sql hljs"><span class="hljs-keyword">CREATE</span> <span class="hljs-keyword">TABLE</span> t_order (
+  id         <span class="hljs-type">BIGINT</span> AUTO_INCREMENT <span class="hljs-keyword">PRIMARY</span> KEY,
+  user_id    <span class="hljs-type">INT</span> <span class="hljs-keyword">NOT</span> <span class="hljs-keyword">NULL</span>,
+  status     TINYINT <span class="hljs-keyword">NOT</span> <span class="hljs-keyword">NULL</span>,
+  amount     <span class="hljs-type">DECIMAL</span>(<span class="hljs-number">10</span>,<span class="hljs-number">2</span>) <span class="hljs-keyword">NOT</span> <span class="hljs-keyword">NULL</span>,
+  created_at DATETIME <span class="hljs-keyword">NOT</span> <span class="hljs-keyword">NULL</span>,
+  KEY idx_user_created (user_id, created_at),
+  KEY idx_status (status)
+) ENGINE<span class="hljs-operator">=</span>InnoDB;</code></pre>
+      <div class="table-wrap"><table>
+      <thead><tr><th>列</th><th>含义</th></tr></thead>
+      <tbody><tr><td><code>id</code></td><td>查询块序号。<strong>id 越大越先执行，id 相同自上而下执行</strong>（同一 id 内，上面的表是驱动表）</td></tr>
+      <tr><td><code>select_type</code></td><td>查询块类型：<code>SIMPLE</code>（无子查询 / union）、<code>PRIMARY</code>、<code>SUBQUERY</code>、<code>DEPENDENT SUBQUERY</code>（相关子查询，每行外层都要跑一次，要警惕）、<code>DERIVED</code>（派生表）、<code>UNION</code>、<code>UNION RESULT</code>、<code>MATERIALIZED</code></td></tr>
+      <tr><td><code>table</code></td><td>访问的表（或派生表 <code>&lt;derivedN&gt;</code>、<code>&lt;subqueryN&gt;</code>）</td></tr>
+      <tr><td><code>partitions</code></td><td>命中的分区</td></tr>
+      <tr><td><code>type</code></td><td><strong>访问类型</strong>，最重要的一列，见 6.3</td></tr>
+      <tr><td><code>possible_keys</code></td><td>可能用到的索引</td></tr>
+      <tr><td><code>key</code></td><td><strong>实际选用的索引</strong>；<code>NULL</code> 表示没用索引</td></tr>
+      <tr><td><code>key_len</code></td><td>用到的索引<strong>字节数</strong>，见 6.4</td></tr>
+      <tr><td><code>ref</code></td><td>与索引比较的对象（常量 <code>const</code>、其他表的列）</td></tr>
+      <tr><td><code>rows</code></td><td><strong>估计</strong>需要检查的行数</td></tr>
+      <tr><td><code>filtered</code></td><td>经表上过滤条件后，<strong>估计</strong>剩余行数百分比；<code>rows × filtered%</code> ≈ 传给下一个表的行数</td></tr>
+      <tr><td><code>Extra</code></td><td>额外信息，见 6.5</td></tr></tbody>
+      </table></div>
+      <h3 id="sec-19">6.3 type：访问类型（好 → 坏）</h3>
+      <p><code>system</code> &gt; <code>const</code> &gt; <code>eq_ref</code> &gt; <code>ref</code> &gt; <code>fulltext</code> &gt; <code>ref_or_null</code> &gt; <code>index_merge</code> &gt; <code>unique_subquery</code> &gt; <code>index_subquery</code> &gt; <code>range</code> &gt; <code>index</code> &gt; <code>ALL</code></p>
+      <div class="table-wrap"><table>
+      <thead><tr><th>type</th><th>含义</th><th>例子</th></tr></thead>
+      <tbody><tr><td><code>system</code> / <code>const</code></td><td>主键或唯一索引<strong>等值匹配常量</strong>，最多一行</td><td><code>WHERE id = 100</code></td></tr>
+      <tr><td><code>eq_ref</code></td><td>join 时，被驱动表用<strong>主键或唯一非空索引</strong>等值匹配，每次最多一行</td><td><code>JOIN b ON a.bid = b.id</code></td></tr>
+      <tr><td><code>ref</code></td><td>非唯一索引（或唯一索引的前缀）等值匹配，可能多行</td><td><code>WHERE user_id = 7</code></td></tr>
+      <tr><td><code>range</code></td><td>索引范围扫描</td><td><code>BETWEEN</code>、<code>&gt;</code>、<code>&lt;</code>、<code>IN</code>、<code>LIKE 'abc%'</code></td></tr>
+      <tr><td><code>index</code></td><td><strong>全索引扫描</strong>，遍历整棵索引树（比 ALL 好在索引通常更小、若覆盖则不回表）</td><td>覆盖索引但无过滤条件</td></tr>
+      <tr><td><code>ALL</code></td><td><strong>全表扫描</strong>（聚簇索引全扫）</td><td>无可用索引</td></tr></tbody>
+      </table></div>
+      <p>日常目标：<strong>至少到 <code>range</code></strong>，join 的被驱动表争取 <code>ref</code> / <code>eq_ref</code>。大表上看到 <code>ALL</code> 或 <code>index</code> 要警觉。</p>
+      <h3 id="sec-20">6.4 key_len：判断联合索引用到了几列</h3>
+      <p><code>key_len</code> 是实际使用的索引长度（字节），可反推用了联合索引的前几列。常见类型长度：</p>
+      <div class="table-wrap"><table>
+      <thead><tr><th>类型</th><th>长度</th><th>备注</th></tr></thead>
+      <tbody><tr><td><code>INT</code></td><td>4</td><td></td></tr>
+      <tr><td><code>BIGINT</code></td><td>8</td><td></td></tr>
+      <tr><td><code>DATE</code></td><td>3</td><td></td></tr>
+      <tr><td><code>DATETIME</code></td><td>5</td><td>无小数秒；有小数秒更长</td></tr>
+      <tr><td><code>TIMESTAMP</code></td><td>4</td><td></td></tr>
+      <tr><td><code>CHAR(n)</code></td><td>n × 字符集最大字节数</td><td><code>utf8mb4</code> 每字符 4 字节</td></tr>
+      <tr><td><code>VARCHAR(n)</code></td><td>n × 字符集最大字节数 + 2</td><td></td></tr>
+      <tr><td>允许 <code>NULL</code></td><td>额外 +1</td><td></td></tr></tbody>
+      </table></div>
+      <p>示例（<code>idx_user_created (user_id INT NOT NULL, created_at DATETIME NOT NULL)</code>）：</p>
+      <ul>
+      <li>只用到 <code>user_id</code>：<code>key_len = 4</code></li>
+      <li>两列都用到：<code>key_len = 4 + 5 = 9</code></li>
+      </ul>
+      <p>如果你以为联合索引的两列都用上了，<code>key_len</code> 却只有 4，说明第二列没有被用来定位，只能靠回表或下推过滤。</p>
+      <h3 id="sec-21">6.5 Extra：最需要读懂的一列</h3>
+      <div class="table-wrap"><table>
+      <thead><tr><th>Extra</th><th>含义</th><th>好 / 坏</th></tr></thead>
+      <tbody><tr><td><code>Using index</code></td><td><strong>覆盖索引</strong>：只读索引就能拿到所有需要的列，不回表</td><td>好</td></tr>
+      <tr><td><code>Using index condition</code></td><td>用了 <strong>ICP（索引条件下推）</strong>：部分 WHERE 在引擎层的索引上判断，减少回表</td><td>好</td></tr>
+      <tr><td><code>Using where</code></td><td>Server 层对引擎返回的行做过滤</td><td>中性，本身不代表差</td></tr>
+      <tr><td><code>Using index; Using where</code></td><td>覆盖索引，且在 Server 层再过滤</td><td>中性偏好</td></tr>
+      <tr><td><code>Using filesort</code></td><td>需要额外排序，<strong>没能直接利用索引的有序性</strong>（不一定写磁盘）</td><td>数据量大时要优化</td></tr>
+      <tr><td><code>Using temporary</code></td><td>使用了<strong>内部临时表</strong>（GROUP BY、DISTINCT、UNION、派生表等）</td><td>数据量大时要优化</td></tr>
+      <tr><td><code>Using join buffer (hash join)</code> / <code>(Block Nested Loop)</code></td><td>被驱动表没有可用索引，用 join buffer 缓解</td><td>通常说明缺索引</td></tr>
+      <tr><td><code>Using join buffer (Batched Key Access)</code></td><td>使用 BKA</td><td>视情况</td></tr>
+      <tr><td><code>Using MRR</code></td><td>使用多范围读优化</td><td>视情况</td></tr>
+      <tr><td><code>Using index for group-by</code></td><td>利用索引完成分组，无需临时表</td><td>好</td></tr>
+      <tr><td><code>Using index for skip scan</code>（8.0.13+）</td><td>跳跃扫描：联合索引缺少前导列等值条件时，对前导列的不同值逐个扫描</td><td>有条件时有用</td></tr>
+      <tr><td><code>Using intersect(...)</code> / <code>Using union(...)</code> / <code>Using sort_union(...)</code></td><td><strong>index merge</strong>：对多个索引的结果做交集 / 并集</td><td>往往说明缺少合适的联合索引</td></tr>
+      <tr><td><code>Backward index scan</code></td><td>倒序扫描索引（<code>ORDER BY ... DESC</code> 可利用，8.0 另支持真正的降序索引）</td><td>好</td></tr>
+      <tr><td><code>Select tables optimized away</code></td><td>如 <code>MIN</code> / <code>MAX</code> / <code>COUNT(*)</code>（MyISAM）直接从索引或元数据得到</td><td>好</td></tr>
+      <tr><td><code>Impossible WHERE</code></td><td>条件恒假，不需要访问表</td><td>提示逻辑可能有误</td></tr></tbody>
+      </table></div>
+      <blockquote>
+      <p><strong>8.0 变化</strong>：<code>GROUP BY</code> 不再隐式排序。5.7 中 <code>GROUP BY</code> 常伴随 <code>Using filesort</code>；8.0 若需要有序结果，必须显式写 <code>ORDER BY</code>。</p>
+      </blockquote>
+      <h3 id="sec-22">6.6 EXPLAIN ANALYZE 怎么读</h3>
+      <p>示意输出（数值随环境而变）：</p>
+      <pre><code>-&gt; Filter: (o.status = 1)  (cost=10.5 rows=100) (actual time=0.040..2.310 rows=96 loops=1)
+    -&gt; Table scan on o  (cost=10.5 rows=1000) (actual time=0.030..1.900 rows=1000 loops=1)</code></pre>
+      <div class="table-wrap"><table>
+      <thead><tr><th>字段</th><th>含义</th></tr></thead>
+      <tbody><tr><td><code>cost=… rows=…</code></td><td><strong>优化器估算</strong>的成本和行数</td></tr>
+      <tr><td><code>actual time=a..b</code></td><td><strong>首行返回耗时..全部返回耗时</strong>，单位毫秒，是每次循环的平均值</td></tr>
+      <tr><td><code>rows=</code></td><td>实际返回行数（同样是每次循环的平均值）</td></tr>
+      <tr><td><code>loops=</code></td><td>该节点被执行的次数，<strong>总行数 ≈ rows × loops</strong>，总耗时 ≈ 时间 × loops</td></tr></tbody>
+      </table></div>
+      <p>最有价值的用法：<strong>比较估算 <code>rows</code> 与实际 <code>rows</code></strong>。两者数量级差距大，说明统计信息失真（回到 4.3 的处理手段）；<code>loops</code> 很大的节点往往是被驱动表，是优化重点。</p>
+      <h3 id="sec-23">6.7 EXPLAIN 的局限</h3>
+      <ul>
+      <li>不执行语句（<code>ANALYZE</code> 除外），<code>rows</code>、<code>filtered</code> 都是<strong>估算</strong>。</li>
+      <li>不反映函数、触发器、存储过程的内部开销。</li>
+      <li>不反映缓存状态：同一计划在数据已在 Buffer Pool 与全在磁盘上耗时相差巨大。</li>
+      <li>它描述「<strong>怎么查</strong>」，不直接告诉你「是否真的慢」，要结合慢日志的实际耗时判断。</li>
+      </ul>
+      <h2 id="sec-24">7. 常见执行方式</h2>
+      <h3 id="sec-25">7.1 回表与覆盖索引</h3>
+      <ul>
+      <li><strong>回表</strong>：通过二级索引找到主键值，再回聚簇索引取完整行。每次回表可能是一次随机 IO。</li>
+      <li><strong>覆盖索引</strong>：查询所需列都在索引里，不回表，<code>Extra</code> 为 <code>Using index</code>。例：<code>SELECT user_id, created_at FROM t_order WHERE user_id = 7</code>，只需读 <code>idx_user_created</code>。</li>
+      <li>避免回表的常见做法：把常用查询列加进联合索引；少用 <code>SELECT *</code>。</li>
+      </ul>
+      <h3 id="sec-26">7.2 ICP：索引条件下推（Index Condition Pushdown）</h3>
+      <ul>
+      <li>场景：联合索引里有些列<strong>无法用来定位范围</strong>（如 <code>LIKE '%xx%'</code>），但它们的值就在索引里。</li>
+      <li>没有 ICP：引擎按能定位的条件取行并<strong>回表</strong>，Server 层再过滤。</li>
+      <li>有 ICP：这些条件在引擎层<strong>先在索引上判断</strong>，不满足的不回表，减少回表次数。</li>
+      <li>特点：<strong>仅适用于二级索引</strong>；聚簇索引上数据本来就在叶子节点，没有收益；覆盖索引也不需要。标志是 <code>Using index condition</code>；开关为 <code>optimizer_switch</code> 中的 <code>index_condition_pushdown</code>（默认 on）。</li>
+      </ul>
+      <h3 id="sec-27">7.3 MRR：多范围读（Multi-Range Read）</h3>
+      <ul>
+      <li>问题：二级索引范围扫描得到的主键值是<strong>乱序</strong>的，逐个回表是随机 IO。</li>
+      <li>做法：先把一批主键值缓存并<strong>排序</strong>，再按主键顺序回表，把随机 IO 变成<strong>近似顺序 IO</strong>。</li>
+      <li>标志 <code>Using MRR</code>。<code>mrr_cost_based</code> 默认 on，优化器按成本决定是否使用，因此经常不触发；想强制需 <code>mrr=on</code> 并关掉 <code>mrr_cost_based</code>，要先用测试验证收益。</li>
+      </ul>
+      <h3 id="sec-28">7.4 Join 相关：BNL / Hash Join / BKA</h3>
+      <div class="table-wrap"><table>
+      <thead><tr><th>算法</th><th>要点</th></tr></thead>
+      <tbody><tr><td>Index Nested Loop</td><td>被驱动表有索引，驱动表每行去索引里查，最理想</td></tr>
+      <tr><td>Block Nested Loop（BNL）</td><td>被驱动表无索引时，把驱动表的多行放进 <code>join_buffer</code>，一次扫描被驱动表就能匹配多行，减少扫描次数；<code>join_buffer_size</code> 默认 256KB。<strong>8.0.20 起被 Hash Join 取代</strong></td></tr>
+      <tr><td>Hash Join（8.0.18+）</td><td>对<strong>等值 join 且无索引</strong>的场景，用驱动表建哈希表，扫描被驱动表探测，Extra 为 <code>Using join buffer (hash join)</code></td></tr>
+      <tr><td>BKA</td><td>批量取驱动表的 join key，配合 MRR 去被驱动表批量查找，默认关闭（<code>batched_key_access=off</code>），需 <code>mrr=on</code>、<code>mrr_cost_based=off</code></td></tr></tbody>
+      </table></div>
+      <blockquote>
+      <p>看到 <code>Using join buffer</code> 的第一反应：<strong>被驱动表的 join 列是否缺索引</strong>。</p>
+      </blockquote>
+      <h3 id="sec-29">7.5 Filesort：额外排序</h3>
+      <ul>
+      <li>无法利用索引有序性时，Server 层把需要排序的数据放进 <strong><code>sort_buffer</code></strong>（<code>sort_buffer_size</code>，默认 256KB），在内存里排；放不下就写<strong>临时文件分块排序再归并</strong>（外部排序）。</li>
+      <li>「Filesort」名字有误导：它<strong>不一定落磁盘</strong>，只表示「不是靠索引直接得到有序」。判断是否落盘看 <code>optimizer_trace</code> 中 <code>filesort_summary</code> 的 <code>number_of_tmp_files</code>。</li>
+      <li>优化方向：让 <code>ORDER BY</code> 的列顺序与索引一致（可以走索引直接有序）；<code>LIMIT</code> 场景下 MySQL 会用优先队列（堆）只维护前 N 条；单路 / 双路排序由 <code>max_length_for_sort_data</code> 影响。算法细节见查询优化章。</li>
+      </ul>
+      <h3 id="sec-30">7.6 临时表：Using temporary</h3>
+      <ul>
+      <li>触发：<code>GROUP BY</code> / <code>DISTINCT</code> 无法利用索引、<code>UNION</code>（去重）、派生表物化、某些 <code>ORDER BY</code> 与 <code>GROUP BY</code> 组合等。</li>
+      <li>引擎：<strong>8.0 默认内存临时表用 TempTable 引擎</strong>（5.7 是 MEMORY）；内存超限后转为<strong>磁盘临时表</strong>（InnoDB）。5.7 中磁盘临时表是 MyISAM（可配置为 InnoDB）。</li>
+      <li>监控：<code>SHOW GLOBAL STATUS LIKE 'Created_tmp%'</code>，<code>Created_tmp_disk_tables</code> 增长快说明大量临时表落盘。</li>
+      <li>优化方向：给分组 / 去重字段建合适索引，减少参与分组的数据量。</li>
+      </ul>
+      <h2 id="sec-31">8. 实战：读一个执行计划的步骤</h2>
+      <ol>
+      <li>看 <code>type</code>：是否 <code>ALL</code> / <code>index</code>；表很大时必须关注。</li>
+      <li>看 <code>key</code> 和 <code>possible_keys</code>：<code>key</code> 为 <code>NULL</code> 但 <code>possible_keys</code> 不为空，说明优化器<strong>嫌索引不划算</strong>；去查统计 / 数据分布。</li>
+      <li>看 <code>key_len</code>：联合索引实际用了几列。</li>
+      <li>看 <code>rows</code> 与 <code>filtered</code>：驱动表行数乘以后续表的行数，估算整体量级。</li>
+      <li>看 <code>Extra</code>：<code>Using filesort</code>、<code>Using temporary</code>、<code>Using join buffer</code>、<code>Using index condition</code> 等。</li>
+      <li>用 <code>EXPLAIN ANALYZE</code> 对比估算与实际，定位估算失真或循环过多的节点。</li>
+      <li>需要追问「为什么」时用 <code>optimizer_trace</code>。</li>
+      <li>修复后复测：先 <code>ANALYZE TABLE</code>，再看计划和实际耗时，不要只看 <code>EXPLAIN</code>。</li>
+      </ol>
+      <p><strong>常见红灯</strong></p>
+      <div class="table-wrap"><table>
+      <thead><tr><th>现象</th><th>可能原因</th></tr></thead>
+      <tbody><tr><td><code>type=ALL</code>，<code>key=NULL</code></td><td>无索引，或条件对索引列做了函数 / 隐式转换</td></tr>
+      <tr><td><code>rows</code> 极大</td><td>缺索引、索引选择性差</td></tr>
+      <tr><td><code>key_len</code> 比预期短</td><td>联合索引的后续列没用上（最左前缀被打断、范围条件之后的列无法用于定位）</td></tr>
+      <tr><td><code>Using filesort</code> + 大 <code>rows</code></td><td>排序字段没索引，或 <code>ORDER BY</code> 与索引顺序不一致</td></tr>
+      <tr><td><code>DEPENDENT SUBQUERY</code></td><td>相关子查询，每个外层行执行一次，考虑改写为 join</td></tr>
+      <tr><td>估算与实际行数差几个数量级</td><td>统计过期或数据倾斜</td></tr></tbody>
+      </table></div>
+      <h2 id="sec-32">9. 8.0 与 5.7 的差异</h2>
+      <div class="table-wrap"><table>
+      <thead><tr><th>方面</th><th>5.7</th><th>8.0</th></tr></thead>
+      <tbody><tr><td>执行计划</td><td><code>EXPLAIN</code> / <code>FORMAT=JSON</code></td><td>新增 <code>FORMAT=TREE</code>（8.0.16）、<code>EXPLAIN ANALYZE</code>（8.0.18）</td></tr>
+      <tr><td>Join 算法</td><td>NLJ、BNL、BKA</td><td>新增 <strong>Hash Join</strong>（8.0.18），BNL 在 8.0.20 被替代</td></tr>
+      <tr><td>统计信息</td><td>仅索引统计</td><td>新增<strong>直方图</strong>（针对无索引列）</td></tr>
+      <tr><td>索引能力</td><td></td><td>降序索引、不可见索引、函数索引、<code>Skip Scan</code>（8.0.13）</td></tr>
+      <tr><td>派生表</td><td></td><td>条件下推到物化派生表（8.0.22）、CTE</td></tr>
+      <tr><td>GROUP BY</td><td>隐式排序（5.7 已废弃）</td><td><strong>不再排序</strong></td></tr>
+      <tr><td>保留字</td><td></td><td>新增（<code>RANK</code>、<code>GROUPS</code> 等）</td></tr>
+      <tr><td>内部临时表</td><td>MEMORY + MyISAM</td><td>TempTable + InnoDB</td></tr>
+      <tr><td>Hint</td><td>5.7.7 引入</td><td>持续增强</td></tr></tbody>
+      </table></div>
+      <h2 id="sec-33">10. 常见面试题</h2>
+      <p><strong>Q1：一条 SQL 在 Server 层经过哪几个阶段？</strong> 解析（词法、语法）→ 预处理（名字解析、权限、语义检查）→ 优化（逻辑改写 + 基于成本选计划）→ 执行（执行器通过 Handler API 向引擎取数并处理）。</p>
+      <p><strong>Q2：EXPLAIN 中 type 从好到坏怎么排？各举一例。</strong> <code>system</code> / <code>const</code>（主键等值）&gt; <code>eq_ref</code>（join 时主键等值）&gt; <code>ref</code>（普通索引等值）&gt; <code>range</code>（范围）&gt; <code>index</code>（全索引扫描）&gt; <code>ALL</code>（全表扫描）。</p>
+      <p><strong>Q3：<code>Using index</code>、<code>Using index condition</code>、<code>Using where</code> 的区别？</strong></p>
+      <ul>
+      <li><code>Using index</code>：覆盖索引，不回表。</li>
+      <li><code>Using index condition</code>：ICP，部分条件在引擎层的索引上判断，减少回表，但仍然会回表。</li>
+      <li><code>Using where</code>：Server 层对引擎返回的行再做过滤，只表示有过滤，不是性能问题的标志。</li>
+      </ul>
+      <p><strong>Q4：为什么优化器会选错索引？怎么办？</strong> 统计信息不准、回表成本估算偏差、为避免排序而选了有序索引等。先 <code>ANALYZE TABLE</code> / 建直方图，再改写 SQL 或调整索引；无法解决时使用 <code>FORCE INDEX</code> 或优化器 Hint，并关注数据分布变化后的回归。</p>
+      <p><strong>Q5：EXPLAIN 里的 rows 是怎么来的？准吗？</strong> 来自索引统计（采样得到的基数）或 range 场景下的索引潜水，是估算值，可能有数量级偏差；用 <code>EXPLAIN ANALYZE</code> 对比实际行数。</p>
+      <p><strong>Q6：怎么通过 key_len 判断联合索引用了几列？</strong> 根据各列类型长度（含是否允许 NULL、字符集）累加。如 <code>(INT NOT NULL, DATETIME NOT NULL)</code>：只用第一列是 4，两列都用是 9。</p>
+      <p><strong>Q7：预编译语句有什么作用？</strong> SQL 只解析一次，减少解析开销；参数与语句分离，防 SQL 注入。但 MySQL 不缓存执行计划，每次执行仍会优化。</p>
+      <p><strong>Q8：<code>EXPLAIN ANALYZE</code> 和 <code>EXPLAIN</code> 的区别？</strong> 前者<strong>真正执行</strong>语句并给出实际耗时、行数、循环次数，可与估算对比；后者只估算。写语句使用要小心。</p>
+      <p><strong>Q9：什么是回表？怎么减少？</strong> 二级索引找到主键后回聚簇索引取完整行。用覆盖索引、减少 <code>SELECT *</code>、ICP、MRR 来减少或优化回表代价。</p>
+      <p><strong>Q10：5.7 升级 8.0，SQL 层面有哪些坑？</strong> 新保留字导致语法错误、<code>GROUP BY</code> 不再隐式排序、查询缓存移除、部分优化器行为变化导致执行计划改变（升级前后对比核心 SQL 的执行计划）。</p>
+      <h2 id="sec-34">11. 本章小结</h2>
+      <ul>
+      <li>阶段：解析 → 预处理 → 优化 → 执行；每一步都有对应的典型错误和排查手段。</li>
+      <li>优化器：<strong>基于成本</strong>，成败取决于统计信息；选错索引先修统计，再改写，最后用 Hint。</li>
+      <li>执行器：8.0 起是迭代器模型，<code>EXPLAIN FORMAT=TREE</code> / <code>ANALYZE</code> 直接展示。</li>
+      <li>读计划抓四点：<code>type</code>、<code>key</code> / <code>key_len</code>、<code>rows</code> / <code>filtered</code>、<code>Extra</code>；<code>ANALYZE</code> 用来比较估算与实际。</li>
+      <li>常见执行方式：覆盖索引、回表、ICP、MRR、BNL / Hash Join / BKA、Filesort、临时表。</li>
+      </ul>
+      <h2 id="sec-35">相关内容</h2>
+      <ul>
+      <li><a href="../overview.html">MySQL 知识总览</a>：体系大纲</li>
+      <li><a href="../00-overview/mysql-layered-architecture.html">MySQL 总览：一条 SQL 的旅程</a>：第 0 章，分层架构与 SQL 旅程</li>
+      </ul>
+    </article>
+<!-- shell:bottom:start（同步工具：scripts/site/sync-shell.py） -->
+  </main>
+</div>
+<footer class="site-footer">DBA Playbook · 个人 DBA 知识库与实战手册 · 本地构建，离线可读</footer>
+<script defer src="../../../assets/site/nav.js"></script>
+<script defer src="../../../assets/site/search-index.js"></script>
+<script defer src="../../../assets/site/ui.js"></script>
+<!-- shell:bottom:end -->
+</body>
+</html>

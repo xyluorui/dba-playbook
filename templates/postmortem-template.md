@@ -1,9 +1,11 @@
 <!--
+本文件是【字段规范】；写作模板是 [postmortem-template.html](postmortem-template.html)（`new-doc.py --type postmortem` 可生成骨架）
 适用于：正式故障复盘（复盘会 / 复盘报告），比案例记录更完整、面向团队
-与 case-template.md 的区别：复盘包含改进项跟踪与责任分配；案例侧重技术记录
+与 case-template 的区别：复盘包含改进项跟踪与责任分配；案例侧重技术记录
 必填：全部章节；改进项必须有责任人和验收标准
 -->
 
+<!-- 以下字段写入产出 HTML 的 <head> 元信息块（title 写入 <title>/<h1>） -->
 ---
 title: "{{故障复盘：一句话标题}}"
 date: <!-- YYYY-MM-DD，复盘会议日期 -->

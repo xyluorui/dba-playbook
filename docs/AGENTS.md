@@ -16,29 +16,25 @@
 
 ## 推荐文档结构
 
-```markdown
----
-front matter（见下）
----
-# 标题（中文，说清解决什么问题）
+用 `../scripts/site/page-template.html` 骨架起步（`python scripts/site/new-doc.py --type doc` 自动生成）：
 
-## 概述        # 适用场景、结论先行
-## 原理        # 为什么，够用即可
-## 实操        # 可复制的命令/配置，标注执行位置
-## 常见问题与坑 # 真实踩过的坑
-## 参考        # 官方文档链接
-```
+- `<h1>`：中文标题（说清解决什么问题）+ 适用版本声明行
+- `<h2>` 概述        # 适用场景、结论先行
+- `<h2>` 原理        # 为什么，够用即可
+- `<h2>` 实操        # 可复制的命令/配置，标注执行位置
+- `<h2>` 常见问题与坑 # 真实踩过的坑
+- `<h2>` 参考        # 官方文档链接
 
-## Front matter
+## 元信息块
 
-```yaml
----
-database: MySQL        # MySQL | Redis | General ...
-category: performance  # 架构 | 复制 | 备份恢复 | 性能 | 监控 | 安全 | 迁移 ...
-tags: [索引, 慢查询]
-date: 2026-11-03
-status: draft          # draft | stable
----
+`<head>` 内的 `<meta>` 标签（等价于原 front matter，页面徽章自动渲染）：
+
+```html
+<meta name="database" content="MySQL">       <!-- MySQL | Redis | General ... -->
+<meta name="category" content="性能">         <!-- 架构 | 复制 | 备份恢复 | 性能 | 监控 | 安全 | 迁移 ... -->
+<meta name="tags" content="索引, 慢查询">
+<meta name="date" content="2026-11-03">
+<meta name="status" content="draft">         <!-- draft | stable -->
 ```
 
 ## 写作要求

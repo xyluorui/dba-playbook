@@ -1,9 +1,11 @@
 <!--
-适用于：runbooks/ 下的操作手册（SOP）
+本文件是【字段规范】；写作模板是 [runbook-template.html](runbook-template.html)（`new-doc.py --type runbook` 可生成骨架）
+适用于：runbooks/ 下的操作手册（SOP），产出为 runbooks/<分类>/<操作名>.html
 必填：目的 / 风险与前置条件 / 前置检查 / 操作步骤 / 验证 / 回滚方案
-复制本文件到 runbooks/<分类>/<操作名>.md 后填写，完成后删除所有 HTML 注释
+填写完成后删除所有 HTML 注释
 -->
 
+<!-- 以下字段写入产出 HTML 的 <head> 元信息块（title 写入 <title>/<h1>） -->
 ---
 title: "{{操作名称，如：MySQL 主从切换}}"
 database: <!-- MySQL | Redis | General -->

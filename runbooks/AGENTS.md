@@ -8,7 +8,7 @@
 
 ## 必备结构
 
-用 [../templates/runbook-template.md](../templates/runbook-template.md) 起步：
+用 [../templates/runbook-template.html](../templates/runbook-template.html) 起步（字段规范见 [runbook-template.md](../templates/runbook-template.md)；`new-doc.py --type runbook` 自动生成骨架）：
 
 1. 目的与适用场景
 2. 风险与前置条件（版本、权限、业务窗口）

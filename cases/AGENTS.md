@@ -6,17 +6,17 @@
 
 - 只记录**真实发生的事件**或**实际复现验证过**的场景
 - 细节缺失写 `（待确认）`，事后补全；**禁止编造**时间点、数值、日志输出
-- 根据口述整理的案例，front matter 标 `source: 口述整理`，模糊细节保留 `（待确认）`
+- 根据口述整理的案例，元信息 `source` 标 `口述整理`，模糊细节保留 `（待确认）`
 
 ## 文件命名与归属
 
-- `YYYY-MM-DD-<slug>.md`，日期 = 事件发生日
+- `YYYY-MM-DD-<slug>.html`，日期 = 事件发生日
 - 按主要问题域放目录（`01-availability` … `07-security`）；跨域事件放主要问题域，其余在文中"关联问题"里说明
 - 一个事件一个文件；同根因多次发作合并记录，写清发作次数与规律
 
 ## 必填内容
 
-用 [../templates/case-template.md](../templates/case-template.md) 起步。缺任何一项视为未完成：
+用 [../templates/case-template.html](../templates/case-template.html) 起步（字段规范见 [case-template.md](../templates/case-template.md)；`new-doc.py --type case` 自动生成骨架）。缺任何一项视为未完成：
 
 现象 → 影响面 → 时间线 → 排查过程（实际执行的命令 + 关键输出）→ 根因 → 处理措施（**止血与治本分开写**）→ 复盘改进
 

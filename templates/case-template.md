@@ -1,9 +1,11 @@
 <!--
-适用于：cases/ 下的案例记录
-必填：front matter + 现象 / 影响面 / 时间线 / 排查过程 / 根因 / 处理措施 / 复盘改进
-复制本文件到 cases/<问题域>/YYYY-MM-DD-<slug>.md 后填写，完成后删除所有 HTML 注释
+本文件是【字段规范】；写作模板是 [case-template.html](case-template.html)（`new-doc.py --type case` 可生成骨架）
+适用于：cases/ 下的案例记录，产出为 cases/<问题域>/YYYY-MM-DD-<slug>.html
+必填：元信息块（见下字段） + 现象 / 影响面 / 时间线 / 排查过程 / 根因 / 处理措施 / 复盘改进
+填写完成后删除所有 HTML 注释
 -->
 
+<!-- 以下字段写入产出 HTML 的 <head> 元信息块（<meta name="..." content="...">） -->
 ---
 database: <!-- MySQL | Redis | General ... -->
 category: <!-- availability | performance | replication | backup-recovery | data-issues | upgrade-migration | security -->

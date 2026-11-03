@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<!--
+  故障复盘模板（postmortem）
+  适用于：正式故障复盘（复盘会 / 复盘报告），比案例记录更完整、面向团队
+  与 case-template 的区别：复盘包含改进项跟踪与责任分配；案例侧重技术记录
+  必填：全部章节；改进项必须有责任人和验收标准
+  用法：复制本文件到 cases/<问题域>/YYYY-MM-DD-<slug>.html 后填写，
+        或 python scripts/site/new-doc.py --type postmortem --dir cases/<问题域> --slug <slug> --title "..."
+        填写完成后删除所有 HTML 注释；字段规范见同名 .md 模板
+-->
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>故障复盘模板 | DBA Playbook</title>
+<meta name="database" content="{{DATABASE}}">
+<meta name="category" content="{{CATEGORY}}">
+<meta name="tags" content="{{TAGS}}">
+<meta name="date" content="{{DATE}}">
+<meta name="incident_date" content="{{INCIDENT_DATE}}">
+<meta name="severity" content="{{SEVERITY}}">
+<meta name="status" content="{{STATUS}}">
+<!-- fallback-style:start（同步工具：scripts/site/sync-shell.py；样式源：scripts/site/theme.css） -->
+<script>document.documentElement.className += " js";</script>
+<style>
+/* 静态主题：外部 CSS/JS 不可用时（如 Obsidian HTML 插件）保证阅读版式 */
+:root {
+  --bg: #f6f7f9; --panel: #ffffff; --text: #1f2329; --muted: #646a73;
+  --accent: #2563eb; --accent-soft: #eaf0fe; --border: #e4e7ed;
+  --code-bg: #f3f5f8; --pre-bg: #1f2430; --pre-text: #dce1e8;
+  --warn: #b45309; --ok: #15803d; --shadow: 0 1px 3px rgba(15, 23, 42, .08);
+  color-scheme: light dark;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0f141a; --panel: #161d25; --text: #d7dde4; --muted: #8b949e;
+    --accent: #6ea8fe; --accent-soft: #1b2a41; --border: #2a3340;
+    --code-bg: #1c242e; --pre-bg: #10161d; --pre-text: #cdd7e1;
+    --warn: #f0b429; --ok: #4ade80; --shadow: none;
+  }
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--panel); color: var(--text);
+  font: 16px/1.75 -apple-system, "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+  overflow-wrap: break-word;
+}
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.site-header, .sidebar, .nav-toggle { display: none; }
+.skip-link { position: absolute; left: -999px; top: .5rem; z-index: 100; }
+.skip-link:focus { left: .5rem; padding: .35rem .8rem; border-radius: .4rem; background: var(--panel); border: 1px solid var(--accent); }
+.layout, main { display: block; }
+.content { max-width: 52rem; margin: 0 auto; padding: 1.6rem 1.5rem 3rem; }
+.crumb { font-size: .82rem; color: var(--muted); margin-bottom: .9rem; }
+.crumb span { color: var(--text); }
+.meta { display: flex; flex-wrap: wrap; gap: .42rem; margin: .35rem 0 1.2rem; }
+.badge {
+  display: inline-flex; align-items: center; font-size: .74rem; line-height: 1.6;
+  padding: .05rem .6rem; border-radius: 1rem; border: 1px solid var(--border);
+  color: var(--muted); background: var(--panel);
+}
+.badge.db { color: var(--accent); border-color: var(--accent); background: var(--accent-soft); font-weight: 600; }
+.badge.cat { color: var(--warn); border-color: currentColor; }
+.badge.status-draft { color: var(--warn); border-color: currentColor; font-weight: 600; }
+.badge.status-stable, .badge.status-done { color: var(--ok); border-color: currentColor; }
+.chip { display: inline-block; font-size: .72rem; padding: 0 .5rem; margin-left: .45rem; border-radius: 1rem; background: var(--accent-soft); color: var(--accent); }
+.content .toc-inline { margin: 0 0 1.6rem; border: 1px solid var(--border); border-radius: .6rem; background: var(--bg); font-size: .86rem; }
+.content .toc-inline summary { cursor: pointer; padding: .45rem .95rem; font-weight: 600; }
+.content .toc-inline ul { list-style: none; margin: 0; padding: .1rem .95rem .7rem; columns: 2 16rem; column-gap: 1.6rem; }
+.content .toc-inline li { margin: 0; padding: .08rem 0; line-height: 1.5; break-inside: avoid; }
+.content .toc-inline li.h3 { padding-left: 1rem; font-size: .82rem; }
+.content .toc-inline a { color: var(--muted); }
+.content .toc-inline a:hover { color: var(--accent); }
+.content h1 { font-size: 1.95rem; line-height: 1.4; margin: .2rem 0 .7rem; letter-spacing: .01em; }
+.content h2 { font-size: 1.4rem; margin: 2.5rem 0 1rem; padding-bottom: .35rem; border-bottom: 2px solid var(--border); }
+.content h3 { font-size: 1.14rem; margin: 1.9rem 0 .7rem; padding-left: .65rem; border-left: 3px solid var(--accent); line-height: 1.5; }
+.content h4 { font-size: 1rem; margin: 1.4rem 0 .55rem; }
+.content p { margin: .8rem 0; }
+.content ul, .content ol { padding-left: 1.6rem; margin: .8rem 0; }
+.content li { margin: .3rem 0; }
+.content li::marker { color: var(--muted); }
+.content hr { border: 0; border-top: 1px solid var(--border); margin: 2.2rem 0; }
+.content strong { font-weight: 650; }
+.content blockquote {
+  margin: 1.2rem 0; padding: .75rem 1.2rem; border-left: 4px solid var(--accent);
+  background: var(--accent-soft); border-radius: 0 .6rem .6rem 0;
+}
+.content blockquote p { margin: .35rem 0; }
+.content blockquote p:first-child { margin-top: 0; }
+.content blockquote p:last-child { margin-bottom: 0; }
+.content code {
+  font-family: "JetBrains Mono", Consolas, Menlo, monospace; font-size: .85em;
+  background: var(--code-bg); border: 1px solid var(--border);
+  padding: .08em .38em; border-radius: .35rem; word-break: break-word;
+}
+.content pre {
+  background: var(--pre-bg); color: var(--pre-text); border-radius: .7rem;
+  padding: 1rem 1.25rem; overflow-x: auto; font-size: .85rem; line-height: 1.65; margin: 1.1rem 0;
+  tab-size: 4;
+}
+.content pre code { background: none; border: 0; padding: 0; color: inherit; font-size: 1em; word-break: normal; }
+.content pre.mermaid { background: #fff; color: #333; text-align: center; }
+.content .diagram {
+  overflow-x: auto; margin: 1.3rem 0; padding: .9rem; text-align: center;
+  background: #fff; border: 1px solid var(--border); border-radius: .7rem;
+}
+.content .diagram svg { max-width: 100%; height: auto; }
+.table-wrap { overflow-x: auto; margin: 1.2rem 0; border: 1px solid var(--border); border-radius: .7rem; }
+.content table { border-collapse: collapse; width: 100%; font-size: .9rem; }
+.content th, .content td { padding: .5rem .8rem; text-align: left; vertical-align: top; border-bottom: 1px solid var(--border); }
+.content th { background: var(--code-bg); font-weight: 650; white-space: nowrap; }
+.content tbody tr:nth-child(even) td { background: color-mix(in srgb, var(--code-bg) 55%, transparent); }
+.content tbody tr:last-child td { border-bottom: 0; }
+.content td code { white-space: nowrap; }
+.content img { max-width: 100%; border-radius: .5rem; }
+.hero { text-align: center; padding: 2.4rem 0 1rem; }
+.hero h1 { font-size: 2.35rem; margin: 0 0 .75rem; }
+.tagline { color: var(--muted); font-size: 1.05rem; margin: 0 auto; max-width: 42rem; }
+.hero-links { margin-top: 1.5rem; }
+.btn { display: inline-block; padding: .52rem 1.25rem; border-radius: .55rem; background: var(--accent); color: #fff; font-weight: 600; margin: 0 .35rem; }
+.btn:hover { text-decoration: none; filter: brightness(1.08); }
+.btn.ghost { background: var(--panel); color: var(--accent); border: 1px solid var(--accent); }
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 1rem; margin: 1.1rem 0 2rem; }
+.card { display: block; padding: 1.1rem 1.3rem; background: var(--panel); border: 1px solid var(--border); border-radius: .75rem; color: var(--text); box-shadow: var(--shadow); }
+.card:hover { text-decoration: none; border-color: var(--accent); }
+.card h3 { margin: 0 0 .45rem; font-size: 1.05rem; padding: 0; border: 0; }
+.card p { margin: 0; font-size: .85rem; color: var(--muted); }
+.recent { list-style: none; padding-left: 0; }
+.recent li { padding: .32rem 0; border-bottom: 1px dashed var(--border); }
+.recent .date { font-family: Consolas, monospace; font-size: .8rem; color: var(--muted); margin-right: .6rem; }
+.auto-list { padding-left: 1.2rem; }
+.site-footer { text-align: center; color: var(--muted); font-size: .8rem; padding: 1.4rem 1rem 2rem; border-top: 1px solid var(--border); }
+@media (max-width: 640px) {
+  .content { padding: 1.1rem 1rem 2.5rem; }
+  .content h1 { font-size: 1.55rem; }
+}
+@media print {
+  .toc-inline > summary { display: none; }
+  .content { max-width: none; padding: 0; }
+  .content pre { white-space: pre-wrap; }
+}
+.hljs-keyword, .hljs-selector-tag, .hljs-doctag { color: #c678dd; }
+.hljs-string, .hljs-attr, .hljs-regexp { color: #98c379; }
+.hljs-number, .hljs-literal, .hljs-symbol { color: #d19a66; }
+.hljs-comment, .hljs-quote { color: #7f8c98; font-style: italic; }
+.hljs-title, .hljs-function, .hljs-section { color: #61afef; }
+.hljs-built_in, .hljs-type { color: #e6c07b; }
+.hljs-variable, .hljs-template-variable, .hljs-name { color: #e06c75; }
+.hljs-meta { color: #56b6c2; }
+</style>
+<!-- fallback-style:end -->
+<link rel="stylesheet" href="../assets/site/site.css">
+</head>
+<body data-root="../">
+<!-- shell:top:start（同步工具：scripts/site/sync-shell.py） -->
+<a class="skip-link" href="#main">跳到正文</a>
+<header class="site-header">
+  <button class="nav-toggle" id="nav-toggle" type="button" aria-label="打开目录" aria-controls="sidebar" aria-expanded="false">☰</button>
+  <a class="brand" href="../index.html">DBA Playbook</a>
+  <div class="search" id="search-box" role="search"></div>
+</header>
+<div class="layout">
+  <nav class="sidebar" id="sidebar" aria-label="站点目录"></nav>
+  <main id="main">
+<!-- shell:top:end -->
+    <article class="content">
+      <!-- 复盘标题，如：故障复盘：主从延迟导致查询超时；复制后改成你的标题（<title> 一起改） -->
+      <h1>故障复盘模板</h1>
+
+      <h2 id="sec-1">事件概述</h2>
+      <!-- 3-5 句话讲清楚：发生了什么、影响多大、怎么恢复的、根因是什么 -->
+      <p>（填写）</p>
+
+      <h2 id="sec-2">影响</h2>
+      <ul>
+        <li>影响业务：</li>
+        <li>影响时长：</li>
+        <li>影响用户/请求量：</li>
+        <li>损益（如有）：</li>
+      </ul>
+
+      <h2 id="sec-3">时间线</h2>
+      <!-- 从发生到恢复的完整时间线，精确到分钟 -->
+      <div class="table-wrap"><table>
+        <thead><tr><th>时间</th><th>事件/动作</th><th>备注</th></tr></thead>
+        <tbody><tr><td>HH:MM</td><td>（填写）</td><td></td></tr></tbody>
+      </table></div>
+
+      <h2 id="sec-4">根因分析</h2>
+      <h3 id="sec-5">直接原因</h3>
+      <p>（填写）</p>
+      <h3 id="sec-6">深层原因</h3>
+      <!-- 5 Why 分析，追问到流程/机制层面 -->
+      <p>（填写）</p>
+      <h3 id="sec-7">触发条件</h3>
+      <!-- 什么条件下会再次发生 -->
+      <p>（填写）</p>
+
+      <h2 id="sec-8">处理过程评估</h2>
+      <ul>
+        <li>做得好的：</li>
+        <li>做得不好的：</li>
+        <li>发现时长（发生→发现）：</li>
+        <li>恢复时长（发现→恢复）：</li>
+      </ul>
+
+      <h2 id="sec-9">改进项</h2>
+      <!-- 每项必须有：内容、责任人、期限、验收标准 -->
+      <div class="table-wrap"><table>
+        <thead><tr><th>改进项</th><th>类型</th><th>责任人</th><th>期限</th><th>验收标准</th><th>状态</th></tr></thead>
+        <tbody><tr><td>（填写）</td><td>预防/发现/止损</td><td>（填写）</td><td>（填写）</td><td>（填写）</td><td>待办</td></tr></tbody>
+      </table></div>
+
+      <h2 id="sec-10">经验沉淀</h2>
+      <!-- 写入知识库的通用规律，附文档链接 -->
+      <ul>
+        <li>相关知识：</li>
+        <li>相关案例：</li>
+      </ul>
+    </article>
+<!-- shell:bottom:start（同步工具：scripts/site/sync-shell.py） -->
+  </main>
+</div>
+<footer class="site-footer">DBA Playbook · 个人 DBA 知识库与实战手册 · 本地构建，离线可读</footer>
+<script defer src="../assets/site/nav.js"></script>
+<script defer src="../assets/site/search-index.js"></script>
+<script defer src="../assets/site/ui.js"></script>
+<!-- shell:bottom:end -->
+</body>
+</html>
