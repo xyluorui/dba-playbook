@@ -1,0 +1,5 @@
+# 统一使用 LF 换行，避免跨平台 diff 折腾
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.gif binary

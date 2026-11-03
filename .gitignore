@@ -1,0 +1,32 @@
+# ── 敏感与数据文件：任何情况下都不允许提交 ──
+*.sql.gz
+*.sql.bz2
+*.dump
+*.dmp
+*.rdb
+*.aof
+*.bak
+*.csv
+.env
+.env.*
+*.pem
+*.key
+id_rsa*
+id_ed25519*
+*credential*
+*secret*
+
+# ── 系统与编辑器 ──
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ── 临时与日志 ──
+*.log
+tmp/
+temp/
+.cache/
