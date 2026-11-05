@@ -197,7 +197,13 @@ window.__SITE_NAV__ = [
    {
     "title": "方法论",
     "path": "docs/06-methodology/index.html",
-    "pages": [],
+    "pages": [
+     {
+      "title": "把知识点做成可交互的学习体验：设计方法与工作流程",
+      "path": "docs/06-methodology/interactive-learning-design.html",
+      "status": "draft"
+     }
+    ],
     "children": []
    },
    {

@@ -24,7 +24,7 @@
 | [docs/03-postgresql/](docs/03-postgresql/) | PostgreSQL（预留） |
 | [docs/04-redis/](docs/04-redis/) | Redis：架构、持久化、集群与高可用、性能、内存分析、监控 |
 | [docs/05-other-databases/](docs/05-other-databases/) | Oracle、MongoDB、Elasticsearch、TiDB/OceanBase 等 |
-| [docs/06-methodology/](docs/06-methodology/) | 方法论：性能分析、容量规划、故障定界、复盘 |
+| [docs/06-methodology/](docs/06-methodology/) | 方法论：性能分析、容量规划、故障定界、复盘、教学设计 |
 | [docs/07-process/](docs/07-process/) | 流程与制度：变更管理、值班 SOP、应急预案、安全合规 |
 
 ## 怎么用
