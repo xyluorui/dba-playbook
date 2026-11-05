@@ -1,4 +1,5 @@
 ---
+import Icon from './Icon.astro';
 import TopicLinks from './TopicLinks.astro';
 import type { ContentDirectory } from '../lib/content';
 import { relativeHref } from '../lib/links';
@@ -16,9 +17,15 @@ const rootCurrent = path === scope?.path ? 'page' : undefined;
 {scope ? (
   <div class="topic-workspace">
     <aside class="topic-sidebar" data-pagefind-ignore>
+      <label class="topic-search" data-topic-filter hidden>
+        <Icon name="search" size={16} />
+        <span class="visually-hidden">搜索当前目录</span>
+        <input type="search" placeholder="搜索目录" autocomplete="off" />
+      </label>
       <nav class="topic-nav" aria-label="专题目录">
         <a class="topic-root" href={rootHref} aria-current={rootCurrent}>{scope.title}</a>
         <TopicLinks directory={scope} {path} />
+        <p class="topic-search-message" data-topic-status role="status"></p>
       </nav>
     </aside>
     <div class="topic-content"><slot /></div>
@@ -27,6 +34,7 @@ const rootCurrent = path === scope?.path ? 'page' : undefined;
 
 <style>
   .topic-workspace {
+    --topic-panel-height: calc(100dvh - var(--site-sticky-height) - 2rem);
     display: grid;
     grid-template-columns: clamp(165px, 19vw, 205px) minmax(0, 1fr);
     gap: clamp(1.4rem, 3vw, 2.9rem);
@@ -34,12 +42,43 @@ const rootCurrent = path === scope?.path ? 'page' : undefined;
   .topic-content { min-width: 0; }
   .topic-sidebar {
     position: sticky;
-    top: calc(var(--site-header-height) + 1rem);
+    top: calc(var(--site-sticky-height) + 1rem);
     align-self: start;
+    display: flex;
+    flex-direction: column;
+    gap: .45rem;
     min-width: 0;
+    max-height: var(--topic-panel-height);
   }
+  .topic-search {
+    display: flex;
+    flex: none;
+    align-items: center;
+    gap: .4rem;
+    padding: .32rem .5rem;
+    border: 1px solid var(--line);
+    border-radius: .4rem;
+    color: var(--muted);
+    background: var(--surface);
+    cursor: text;
+  }
+  .topic-search svg { flex: none; }
+  .topic-search:focus-within { border-color: var(--accent); }
+  .topic-search input {
+    min-width: 0;
+    width: 100%;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--text);
+    font-size: .86rem;
+  }
+  .topic-search input:focus-visible { outline: none; }
+  .topic-search input::placeholder { color: var(--muted); opacity: 1; }
+  .topic-search-message { margin: 0; color: var(--muted); font-size: .86rem; }
+  .topic-search-message:not(:empty) { padding: .35rem .45rem; }
   .topic-nav {
-    max-height: calc(100dvh - var(--site-header-height) - 2rem);
+    min-height: 0;
     overflow-y: auto;
     scrollbar-width: thin;
   }
@@ -81,18 +120,18 @@ const rootCurrent = path === scope?.path ? 'page' : undefined;
   }
   @media (max-width: 740px) {
     .topic-workspace {
-      --topic-nav-height: min(25dvh, 10rem);
+      --topic-panel-height: min(28dvh, 12rem);
       display: block;
     }
     .topic-sidebar {
-      top: var(--site-header-height);
+      top: var(--site-sticky-height);
       z-index: 4;
       margin-bottom: 1rem;
       padding-block: .3rem;
       background: var(--bg);
     }
+    .topic-search input { font-size: 1rem; }
     .topic-nav {
-      max-height: var(--topic-nav-height);
       overscroll-behavior: contain;
       padding: .3rem;
       border: 1px solid var(--line);
@@ -101,6 +140,6 @@ const rootCurrent = path === scope?.path ? 'page' : undefined;
     }
     .topic-nav :global(a),
     .topic-nav :global(.topic-children > summary) { padding-block: .5rem; }
-    .topic-content :global([id]) { scroll-margin-top: calc(var(--topic-nav-height) + 1rem); }
+    .topic-content :global([id]) { scroll-margin-top: calc(var(--topic-panel-height) + 1rem); }
   }
 </style>

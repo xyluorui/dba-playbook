@@ -27,14 +27,14 @@ const tags = Array.from(new Set((meta.tags ?? '').split(/[,，]/).map((tag) => t
     <Fragment set:html={article.headStyles} />
   </Fragment>
 
-  <div class="page-container article-page">
-    <nav aria-label="面包屑" class="article-crumbs">
-      <a href={href('index.html')}>首页</a>
-      {scope && <a href={href(scope.path)}>{scope.title}</a>}
-      {directory && directory.path !== scope?.path && <a href={href(directory.path)}>{directory.title}</a>}
-      <span aria-current="page">{title}</span>
-    </nav>
+  <Fragment slot="breadcrumbs">
+    <a href={href('index.html')}>首页</a>
+    {scope && <a href={href(scope.path)}>{scope.title}</a>}
+    {directory && directory.path !== scope?.path && <a href={href(directory.path)}>{directory.title}</a>}
+    <span aria-current="page">{title}</span>
+  </Fragment>
 
+  <div class="page-container article-page">
     <TopicWorkspace {path} {scope}>
       <div class:list={['article-workspace', { 'has-outline': outline.length > 0 }]}>
         <article class="reader" data-pagefind-body={article.indexable ? true : undefined} data-pagefind-ignore={article.indexable ? undefined : 'all'}>
@@ -83,12 +83,9 @@ const tags = Array.from(new Set((meta.tags ?? '').split(/[,，]/).map((tag) => t
 </SiteLayout>
 
 <style>
-  .article-crumbs { display: flex; flex-wrap: wrap; gap: .25rem .62rem; margin-bottom: 1.7rem; font-size: .84rem; color: var(--muted); }
-  .article-crumbs > :not(:first-child)::before { content: '/'; margin-inline-end: .62rem; color: var(--muted); opacity: .7; }
-  .article-crumbs [aria-current='page'] { color: var(--text); }
-  .article-crumbs a:hover { color: var(--accent); }
+  .article-page { padding-top: 1.7rem; }
   .article-workspace.has-outline { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 204px); gap: clamp(1.4rem, 3vw, 2.9rem); }
-  .article-sidepanel { position: sticky; top: 5.8rem; max-height: calc(100dvh - 6.8rem); overflow: auto; scrollbar-width: thin; }
+  .article-sidepanel { position: sticky; top: calc(var(--site-sticky-height) + 1rem); max-height: calc(100dvh - var(--site-sticky-height) - 2rem); overflow: auto; scrollbar-width: thin; }
   .side-label { margin: 0 0 .65rem; color: var(--muted); font-size: .75rem; font-weight: 700; letter-spacing: .08em; }
   .article-sidepanel ul, .mobile-article-nav ul { padding: 0; margin: 0; list-style: none; }
   .article-sidepanel li a, .mobile-article-nav li a { display: block; padding: .32rem .55rem; color: var(--muted); font-size: .86rem; overflow-wrap: anywhere; }
@@ -113,6 +110,6 @@ const tags = Array.from(new Set((meta.tags ?? '').split(/[,，]/).map((tag) => t
     .mobile-article-nav { display: block; }
   }
   @media (max-width: 740px) {
-    .article-crumbs { margin-bottom: 1.3rem; }
+    .article-page { padding-top: 1rem; }
   }
 </style>

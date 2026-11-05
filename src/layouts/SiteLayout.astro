@@ -13,9 +13,10 @@ interface Props {
 const { title, description = 'MySQL 与 Redis 知识、交互实验和 DBA 实战手册。', section, path } = Astro.props;
 const root = relativeHref(path, 'index.html');
 const pagefind = relativeHref(path, 'pagefind/pagefind.js');
+const hasBreadcrumbs = Astro.slots.has('breadcrumbs');
 ---
 <!doctype html>
-<html lang="zh-CN">
+<html lang="zh-CN" class:list={{ 'has-breadcrumbs': hasBreadcrumbs }}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -52,6 +53,11 @@ const pagefind = relativeHref(path, 'pagefind/pagefind.js');
           </button>
         </div>
       </div>
+      {hasBreadcrumbs && (
+        <nav class="page-container site-breadcrumbs" aria-label="面包屑">
+          <slot name="breadcrumbs" />
+        </nav>
+      )}
     </header>
 
     <main id="site-main" class="site-main" tabindex="-1">

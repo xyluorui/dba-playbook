@@ -1,5 +1,83 @@
 (() => {
   const root = document.documentElement;
+
+  if (root.classList.contains('has-breadcrumbs')) {
+    const header = document.querySelector('.site-header');
+    const syncStickyHeight = () => {
+      root.style.setProperty('--site-sticky-height', `${header.getBoundingClientRect().height}px`);
+    };
+    syncStickyHeight();
+    if ('ResizeObserver' in window) new ResizeObserver(syncStickyHeight).observe(header);
+  }
+
+  function filterTopicList(list, matches, includeAll = false) {
+    let found = false;
+    for (const item of list.children) {
+      const entry = item.firstElementChild;
+      const isBranch = entry instanceof HTMLDetailsElement;
+      const label = isBranch ? entry.querySelector('summary') : entry;
+      const matchesTitle = includeAll || matches(label.textContent);
+      const matchesChild = isBranch && filterTopicList(entry.querySelector(':scope > ul'), matches, matchesTitle);
+
+      item.hidden = !matchesTitle && !matchesChild;
+      if (isBranch) entry.open = !item.hidden;
+      found ||= !item.hidden;
+    }
+    return found;
+  }
+
+  function setupTopicSearch() {
+    const controls = document.querySelector('[data-topic-filter]');
+    if (!controls) return;
+    const sidebar = controls.closest('.topic-sidebar');
+    const nav = sidebar.querySelector('.topic-nav');
+    const tree = nav.querySelector('.topic-links');
+    if (!tree) return;
+
+    const field = controls.querySelector('input');
+    const message = nav.querySelector('[data-topic-status]');
+    const branches = [...tree.querySelectorAll('details')];
+    const normalize = (text) => text.normalize('NFKC').toLowerCase();
+    let unfiltered;
+
+    function update() {
+      const query = normalize(field.value).trim();
+      if (!query) {
+        if (!unfiltered) return;
+        for (const item of tree.querySelectorAll('li[hidden]')) item.hidden = false;
+        branches.forEach((branch, index) => { branch.open = unfiltered.open[index]; });
+        message.textContent = '';
+        nav.scrollTop = unfiltered.scrollTop;
+        unfiltered = undefined;
+        return;
+      }
+
+      unfiltered ??= { open: branches.map((branch) => branch.open), scrollTop: nav.scrollTop };
+      const terms = query.split(/\s+/);
+      const found = filterTopicList(tree, (text) => {
+        const title = normalize(text);
+        return terms.every((term) => title.includes(term));
+      });
+      message.textContent = found ? '' : '没有匹配的章节或文章。';
+      nav.scrollTop = 0;
+    }
+
+    field.addEventListener('input', (event) => {
+      if (!event.isComposing) update();
+    });
+    field.addEventListener('compositionend', update);
+    field.addEventListener('keydown', (event) => {
+      if (event.key !== 'Escape' || event.isComposing || !field.value) return;
+      event.preventDefault();
+      field.value = '';
+      update();
+    });
+    controls.hidden = false;
+    update();
+  }
+
+  setupTopicSearch();
+
   const themeToggle = document.querySelector('[data-theme-toggle]');
   const themeKey = 'dba-playbook-theme';
 

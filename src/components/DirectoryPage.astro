@@ -37,13 +37,13 @@ const topicsHeading = isMysql ? '学习章节' : isRedis ? '知识专题' : isPr
 ---
 
 <SiteLayout title={title} description={description} section={isGeneralKnowledge ? undefined : section} path={path}>
-  <div class:list={['page-container', 'directory-page', { 'redis-directory': isRedis }]}>
-    <nav aria-label="面包屑" class="directory-crumbs">
-      <a href={href('index.html')}>首页</a>
-      {parent && <a href={href(parent.path)}>{parent.title}</a>}
-      <span aria-current="page">{title}</span>
-    </nav>
+  <Fragment slot="breadcrumbs">
+    <a href={href('index.html')}>首页</a>
+    {parent && <a href={href(parent.path)}>{parent.title}</a>}
+    <span aria-current="page">{title}</span>
+  </Fragment>
 
+  <div class:list={['page-container', 'directory-page', { 'redis-directory': isRedis }]}>
     <TopicWorkspace {path} {scope}>
       <header class="directory-hero">
         <p class="eyebrow">{isMysql ? 'MYSQL / 知识库' : isRedis ? 'REDIS / 知识库' : isLabs ? 'DBA / LABS' : isGeneralKnowledge ? 'DBA / 知识库' : sectionLabels[section]}</p>
@@ -169,11 +169,7 @@ const topicsHeading = isMysql ? '学习章节' : isRedis ? '知识专题' : isPr
 </SiteLayout>
 
 <style>
-  .directory-page { padding-bottom: clamp(3rem, 7vw, 6rem); }
-  .directory-crumbs { display: flex; flex-wrap: wrap; gap: .25rem .62rem; margin-bottom: 1.55rem; font-size: .84rem; color: var(--muted); }
-  .directory-crumbs > :not(:first-child)::before { content: '/'; margin-inline-end: .62rem; color: var(--muted); opacity: .7; }
-  .directory-crumbs [aria-current='page'] { color: var(--text); }
-  .directory-crumbs a:hover { color: var(--accent); }
+  .directory-page { padding-block: 1.55rem clamp(3rem, 7vw, 6rem); }
   .directory-hero { padding: clamp(1rem, 3vw, 2rem) 0 clamp(1.4rem, 4vw, 3rem); }
   .directory-hero h1 { margin: .4rem 0 .7rem; font: 760 clamp(2.6rem, 7vw, 5rem)/1.02 var(--serif); letter-spacing: -.04em; }
   .redis-directory .directory-hero .eyebrow { color: var(--redis); }
