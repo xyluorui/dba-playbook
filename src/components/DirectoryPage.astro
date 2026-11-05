@@ -3,7 +3,8 @@ import { posix } from 'node:path';
 import SiteLayout from '../layouts/SiteLayout.astro';
 import Icon from './Icon.astro';
 import RichText from './RichText.astro';
-import { articlesByPath, directoriesByPath, sectionLabels, statusLabel, type ContentDirectory } from '../lib/content';
+import TopicWorkspace from './TopicWorkspace.astro';
+import { articlesByPath, directoriesByPath, sectionLabels, statusLabel, topicScope, type ContentDirectory } from '../lib/content';
 import { relativeHref } from '../lib/links';
 
 interface Props {
@@ -12,6 +13,7 @@ interface Props {
 
 const { directory } = Astro.props;
 const { path, section } = directory;
+const scope = path.startsWith('docs/') ? topicScope(path) : undefined;
 const href = (target: string) => relativeHref(path, target);
 const isMysql = path === 'docs/02-mysql/index.html';
 const isRedis = path === 'docs/04-redis/index.html';
@@ -40,116 +42,118 @@ const topicsHeading = isMysql ? '学习章节' : isRedis ? '知识专题' : isPr
       <span aria-current="page">{title}</span>
     </nav>
 
-    <header class="directory-hero">
-      <p class="eyebrow">{isMysql ? 'MYSQL / 知识库' : isRedis ? 'REDIS / 知识库' : isLabs ? 'DBA / LABS' : isGeneralKnowledge ? 'DBA / 知识库' : sectionLabels[section]}</p>
-      <h1>{title}</h1>
-      {description && <p class="directory-description">{description}</p>}
-      {overview && (
-        <div class="directory-actions">
-          <a class="primary-link" href={href(overview.path)}>打开 MySQL 学习地图 <Icon name="arrow" size={17} /></a>
-          <a class="secondary-link" href={href('labs/index.html')}>查看相关实验</a>
-        </div>
-      )}
-    </header>
-
-    {lab && (
-      <section aria-labelledby="lab-title" class="lab-feature">
-        <div class="lab-feature-copy">
-          <div class="lab-feature-kicker"><Icon name="flask" size={17} /> MySQL · 单步观察</div>
-          <h2 id="lab-title">一条 SELECT 的旅程</h2>
-          <p>一条查询经过连接、解析、优化和 InnoDB 时，各层分别做了什么？在拓扑和时序视图中逐步跟踪。</p>
+    <TopicWorkspace {path} {scope}>
+      <header class="directory-hero">
+        <p class="eyebrow">{isMysql ? 'MYSQL / 知识库' : isRedis ? 'REDIS / 知识库' : isLabs ? 'DBA / LABS' : isGeneralKnowledge ? 'DBA / 知识库' : sectionLabels[section]}</p>
+        <h1>{title}</h1>
+        {description && <p class="directory-description">{description}</p>}
+        {overview && (
           <div class="directory-actions">
-            <a class="primary-link" href={href('labs/app/index.html')}><Icon name="play" size={17} /> 开始实验</a>
-            <a class="secondary-link" href={href(lab.path)}>阅读静态步骤</a>
+            <a class="primary-link" href={href(overview.path)}>打开 MySQL 学习地图 <Icon name="arrow" size={17} /></a>
+            <a class="secondary-link" href={href('labs/index.html')}>查看相关实验</a>
           </div>
-        </div>
-        <div class="lab-route" aria-label="实验观察顺序">
-          <div><span>01</span> 连接层</div>
-          <div><span>02</span> SQL 层</div>
-          <div><span>03</span> InnoDB</div>
-        </div>
-      </section>
-    )}
+        )}
+      </header>
 
-    {isLabs && !articles.some((article) => article.meta.database.toLowerCase() === 'redis') && (
-      <section class="empty-panel" aria-labelledby="redis-labs-heading">
-        <h2 id="redis-labs-heading">Redis 实验</h2>
-        <p>场景待补充。可以先从 Redis 专区浏览对应主题。</p>
-        <a class="text-link" href={href('docs/04-redis/index.html')}>浏览 Redis 专区 <Icon name="arrow" size={16} /></a>
-      </section>
-    )}
+      {lab && (
+        <section aria-labelledby="lab-title" class="lab-feature">
+          <div class="lab-feature-copy">
+            <div class="lab-feature-kicker"><Icon name="flask" size={17} /> MySQL · 单步观察</div>
+            <h2 id="lab-title">一条 SELECT 的旅程</h2>
+            <p>一条查询经过连接、解析、优化和 InnoDB 时，各层分别做了什么？在拓扑和时序视图中逐步跟踪。</p>
+            <div class="directory-actions">
+              <a class="primary-link" href={href('labs/app/index.html')}><Icon name="play" size={17} /> 开始实验</a>
+              <a class="secondary-link" href={href(lab.path)}>阅读静态步骤</a>
+            </div>
+          </div>
+          <div class="lab-route" aria-label="实验观察顺序">
+            <div><span>01</span> 连接层</div>
+            <div><span>02</span> SQL 层</div>
+            <div><span>03</span> InnoDB</div>
+          </div>
+        </section>
+      )}
 
-    {articles.length > 0 && (
-      <section class="directory-section" aria-labelledby="directory-articles-heading">
-        <h2 id="directory-articles-heading">{isLabs ? '其他实验' : '本目录文章'}</h2>
-        <ul class="directory-article-list">
-          {articles.map((article) => (
-            <li>
-              <h3><a href={href(article.path)}>{article.title} <Icon name="arrow" size={17} /></a></h3>
-              {article.description && <p>{article.description}</p>}
-              {article.indexable && (
-                <p class="directory-entry-meta">
-                  {article.meta.category && <span>{article.meta.category}</span>}
-                  {article.meta.status && <span>{statusLabel(article.meta.status)}</span>}
-                  {article.meta.date && <time datetime={article.meta.date}>{article.meta.date}</time>}
-                </p>
-              )}
-            </li>
-          ))}
-        </ul>
-      </section>
-    )}
+      {isLabs && !articles.some((article) => article.meta.database.toLowerCase() === 'redis') && (
+        <section class="empty-panel" aria-labelledby="redis-labs-heading">
+          <h2 id="redis-labs-heading">Redis 实验</h2>
+          <p>场景待补充。可以先从 Redis 专区浏览对应主题。</p>
+          <a class="text-link" href={href('docs/04-redis/index.html')}>浏览 Redis 专区 <Icon name="arrow" size={16} /></a>
+        </section>
+      )}
 
-    {children.length > 0 && (
-      <section class="directory-section" aria-labelledby="directory-topics-heading">
-        <div class="directory-section-heading">
-          <h2 id="directory-topics-heading">{topicsHeading}</h2>
-          {(isMysql || isRedis) && <span>{children.length} 个主题</span>}
-        </div>
-        <ul class="topic-cards">
-          {children.map((topic) => {
-            const numbered = isMysql ? /^(\d+)\s*·\s*(.+)$/.exec(topic.title) : null;
-            return (
-              <li class="topic-card">
-                <div class="topic-card-top">
-                  {numbered && <span class="topic-number">{numbered[1]}</span>}
-                  {(isMysql || isRedis) && (
-                    <span class:list={['topic-state', { 'has-articles': topic.articleCount > 0 }]}>
-                      {topic.articleCount > 0 ? `${topic.articleCount} 篇文章` : '待补充'}
-                    </span>
-                  )}
-                </div>
-                <h3><a href={href(topic.path)}>{numbered?.[2] ?? topic.title} <Icon name="diagonal" size={17} /></a></h3>
-                {topic.description && <p>{topic.description}</p>}
-                {(isMysql || isRedis) && topic.articlePaths.length > 0 && (
-                  <ul class="topic-card-articles">
-                    {topic.articlePaths.map((entry) => (
-                      <li><a href={href(entry)}>{articlesByPath.get(entry)!.title}</a></li>
-                    ))}
-                  </ul>
+      {articles.length > 0 && (
+        <section class="directory-section" aria-labelledby="directory-articles-heading">
+          <h2 id="directory-articles-heading">{isLabs ? '其他实验' : '本目录文章'}</h2>
+          <ul class="directory-article-list">
+            {articles.map((article) => (
+              <li>
+                <h3><a href={href(article.path)}>{article.title} <Icon name="arrow" size={17} /></a></h3>
+                {article.description && <p>{article.description}</p>}
+                {article.indexable && (
+                  <p class="directory-entry-meta">
+                    {article.meta.category && <span>{article.meta.category}</span>}
+                    {article.meta.status && <span>{statusLabel(article.meta.status)}</span>}
+                    {article.meta.date && <time datetime={article.meta.date}>{article.meta.date}</time>}
+                  </p>
                 )}
               </li>
-            );
-          })}
-        </ul>
-      </section>
-    )}
+            ))}
+          </ul>
+        </section>
+      )}
 
-    {!isLabs && !articles.length && !children.length && (
-      <section class="empty-panel">
-        <h2>内容待补充</h2>
-        <p>目录已建立。新增内容后，可在这里直接查看。</p>
-      </section>
-    )}
+      {children.length > 0 && (
+        <section class="directory-section" aria-labelledby="directory-topics-heading">
+          <div class="directory-section-heading">
+            <h2 id="directory-topics-heading">{topicsHeading}</h2>
+            {(isMysql || isRedis) && <span>{children.length} 个主题</span>}
+          </div>
+          <ul class="topic-cards">
+            {children.map((topic) => {
+              const numbered = isMysql ? /^(\d+)\s*·\s*(.+)$/.exec(topic.title) : null;
+              return (
+                <li class="topic-card">
+                  <div class="topic-card-top">
+                    {numbered && <span class="topic-number">{numbered[1]}</span>}
+                    {(isMysql || isRedis) && (
+                      <span class:list={['topic-state', { 'has-articles': topic.articleCount > 0 }]}>
+                        {topic.articleCount > 0 ? `${topic.articleCount} 篇文章` : '待补充'}
+                      </span>
+                    )}
+                  </div>
+                  <h3><a href={href(topic.path)}>{numbered?.[2] ?? topic.title} <Icon name="diagonal" size={17} /></a></h3>
+                  {topic.description && <p>{topic.description}</p>}
+                  {(isMysql || isRedis) && topic.articlePaths.length > 0 && (
+                    <ul class="topic-card-articles">
+                      {topic.articlePaths.map((entry) => (
+                        <li><a href={href(entry)}>{articlesByPath.get(entry)!.title}</a></li>
+                      ))}
+                    </ul>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      )}
 
-    {isPractice && <a class="text-link" href={href('templates/index.html')}>查看记录模板 <Icon name="arrow" size={16} /></a>}
+      {!isLabs && !articles.length && !children.length && (
+        <section class="empty-panel">
+          <h2>内容待补充</h2>
+          <p>目录已建立。新增内容后，可在这里直接查看。</p>
+        </section>
+      )}
 
-    {directory.readme && !isMysql && !isRedis && (
-      <details class="directory-notes">
-        <summary>{isLabs ? '场景数据与维护说明' : '目录说明与资料'}</summary>
-        <RichText html={directory.readme} />
-      </details>
-    )}
+      {isPractice && <a class="text-link" href={href('templates/index.html')}>查看记录模板 <Icon name="arrow" size={16} /></a>}
+
+      {directory.readme && !isMysql && !isRedis && (
+        <details class="directory-notes">
+          <summary>{isLabs ? '场景数据与维护说明' : '目录说明与资料'}</summary>
+          <RichText html={directory.readme} />
+        </details>
+      )}
+    </TopicWorkspace>
   </div>
 </SiteLayout>
 

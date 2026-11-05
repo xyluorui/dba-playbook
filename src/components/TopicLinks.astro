@@ -1,0 +1,37 @@
+---
+import TopicLinks from './TopicLinks.astro';
+import { articlesByPath, directoriesByPath, type ContentDirectory } from '../lib/content';
+import { relativeHref } from '../lib/links';
+
+interface Props {
+  directory: ContentDirectory;
+  path: string;
+}
+
+const { directory, path } = Astro.props;
+const articles = directory.articlePaths.map((entry) => articlesByPath.get(entry)!);
+const chapters = directory.childPaths.map((entry) => directoriesByPath.get(entry)!);
+---
+
+{(articles.length > 0 || chapters.length > 0) && (
+  <ul class="topic-links">
+    {articles.map((article) => (
+      <li>
+        <a href={relativeHref(path, article.path)} aria-current={path === article.path ? 'page' : undefined}>{article.title}</a>
+      </li>
+    ))}
+    {chapters.map((chapter) => {
+      const active = path.startsWith(chapter.path.slice(0, -'index.html'.length));
+      return (
+        <li>
+          <a
+            href={relativeHref(path, chapter.path)}
+            class:list={{ 'active-topic': active }}
+            aria-current={path === chapter.path ? 'page' : undefined}
+          >{chapter.title}</a>
+          {active && <TopicLinks directory={chapter} {path} />}
+        </li>
+      );
+    })}
+  </ul>
+)}

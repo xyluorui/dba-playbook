@@ -1,0 +1,121 @@
+---
+import TopicLinks from './TopicLinks.astro';
+import type { ContentDirectory } from '../lib/content';
+import { relativeHref } from '../lib/links';
+
+interface Props {
+  path: string;
+  scope?: ContentDirectory;
+}
+
+const { path, scope } = Astro.props;
+const rootHref = scope && relativeHref(path, scope.path);
+const rootCurrent = path === scope?.path ? 'page' : undefined;
+---
+
+{scope ? (
+  <div class="topic-workspace">
+    <aside class="topic-sidebar" data-pagefind-ignore>
+      <nav class="topic-nav desktop-topics" aria-label="专题目录">
+        <p class="topic-label">专题目录</p>
+        <a class="topic-root" href={rootHref} aria-current={rootCurrent}>{scope.title}</a>
+        <TopicLinks directory={scope} {path} />
+      </nav>
+      <details class="compact-topics">
+        <summary>专题目录 <span>{scope.title}</span></summary>
+        <nav class="topic-nav" aria-label="专题目录">
+          <a class="topic-root" href={rootHref} aria-current={rootCurrent}>{scope.title}</a>
+          <TopicLinks directory={scope} {path} />
+        </nav>
+      </details>
+    </aside>
+    <div class="topic-content"><slot /></div>
+  </div>
+) : <slot />}
+
+<style>
+  .topic-workspace {
+    display: grid;
+    grid-template-columns: clamp(165px, 19vw, 205px) minmax(0, 1fr);
+    gap: clamp(1.4rem, 3vw, 2.9rem);
+  }
+  .topic-content { min-width: 0; }
+  .topic-sidebar {
+    position: sticky;
+    top: calc(var(--site-header-height) + 1rem);
+    align-self: start;
+    min-width: 0;
+  }
+  .desktop-topics {
+    max-height: calc(100dvh - var(--site-header-height) - 2rem);
+    overflow-y: auto;
+    scrollbar-width: thin;
+  }
+  .topic-label {
+    margin: 0 0 .65rem .45rem;
+    color: var(--muted);
+    font-size: .75rem;
+    font-weight: 700;
+    letter-spacing: .08em;
+  }
+  .topic-nav :global(ul) { padding: 0; margin: 0; list-style: none; }
+  .topic-nav :global(ul ul) {
+    margin: .25rem 0 .45rem .55rem;
+    padding-inline-start: .35rem;
+    border-inline-start: 1px solid var(--line);
+  }
+  .topic-nav :global(a) {
+    display: block;
+    padding: .32rem .45rem;
+    border-radius: .35rem;
+    color: var(--muted);
+    font-size: .86rem;
+    text-decoration: none;
+    overflow-wrap: anywhere;
+  }
+  .topic-nav :global(a:focus-visible) { outline-offset: -2px; }
+  .topic-nav .topic-root { margin-bottom: .35rem; color: var(--text); font-size: 1rem; font-weight: 700; }
+  .topic-nav :global(.active-topic) { color: var(--text); font-weight: 700; }
+  .topic-nav :global(a:hover) { color: var(--accent); }
+  .topic-nav :global(a[aria-current='page']) {
+    color: var(--accent);
+    background: var(--accent-soft);
+    font-weight: 700;
+  }
+  .compact-topics { display: none; }
+  @media (max-width: 740px) {
+    .topic-workspace { display: block; }
+    .topic-sidebar {
+      top: var(--site-header-height);
+      z-index: 4;
+      margin-bottom: 1rem;
+      padding-block: .3rem;
+      background: var(--bg);
+    }
+    .desktop-topics { display: none; }
+    .compact-topics { display: block; }
+    .compact-topics summary {
+      padding: .5rem .75rem;
+      border: 1px solid var(--line);
+      border-radius: .5rem;
+      background: var(--surface);
+      cursor: pointer;
+      font-size: .9rem;
+      font-weight: 650;
+    }
+    .compact-topics summary span { margin-inline-start: .4rem; color: var(--muted); font-weight: 400; }
+    .compact-topics .topic-nav {
+      position: absolute;
+      inset: 100% 0 auto;
+      max-height: min(55dvh, 26rem);
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      padding: .5rem;
+      border: 1px solid var(--line-strong);
+      border-radius: .5rem;
+      background: var(--surface);
+      box-shadow: 0 .4rem 1.2rem #0004;
+    }
+    .compact-topics .topic-nav :global(a) { padding-block: .5rem; }
+  }
+</style>

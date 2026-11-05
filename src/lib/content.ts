@@ -164,6 +164,13 @@ export const directories = Array.from(directoriesBySourcePath.values());
 export const articlesByPath = new Map(articles.map((article) => [article.path, article]));
 export const directoriesByPath = new Map(directories.map((directory) => [directory.path, directory]));
 
+export function topicScope(path: string) {
+  const [root, group] = path.split('/');
+  const section = sectionFor(path);
+  const folder = section === 'mysql' || section === 'redis' ? `${root}/${group}` : root;
+  return directoriesByPath.get(`${folder}/index.html`);
+}
+
 const redisTopicOrder = [
   'architecture', 'deployment', 'persistence', 'cluster-ha', 'performance', 'memory-analysis', 'monitoring',
 ];
