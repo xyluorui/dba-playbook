@@ -163,7 +163,7 @@ a:hover { text-decoration: underline; }
 <ul>
 <li class="h2"><a href="#sec-1">这个演示是什么</a></li>
 <li class="h2"><a href="#sec-2">怎么用</a></li>
-<li class="h2"><a href="#sec-3">交互演示区</a></li>
+<li class="h2"><a href="#sec-3">进入交互实验室</a></li>
 <li class="h2"><a href="#sec-4">步骤一览（静态版）</a></li>
 <li class="h2"><a href="#sec-5">参考</a></li>
 </ul></details></nav>
@@ -173,8 +173,8 @@ a:hover { text-decoration: underline; }
 
       <h2 id="sec-1">这个演示是什么</h2>
       <p>
-        这是交互实验室（<code>labs/</code>）的<strong>单步演示</strong>：把一条 <code>SELECT</code> 语句从客户端发出到结果返回的完整旅程，
-        拆成一步一步可以停下来观察的过程。它是 P0 阶段用来验证单步引擎和场景数据格式的示例，还没有"改条件对比"的交互（那是 P1 起的实验形态）。
+        这是交互实验室（<code>labs/</code>）的<strong>第一个场景</strong>：把一条 <code>SELECT</code> 语句从客户端发出到结果返回的完整旅程，
+        拆成一步一步可以停下来观察的过程。当前还没有"改条件对比"的交互（那是 P1 起的实验形态）。
       </p>
       <p>
         设计方法见 <a href="../docs/06-methodology/interactive-learning-design.html">交互式学习体验设计方法</a>，
@@ -186,19 +186,22 @@ a:hover { text-decoration: underline; }
       <ul>
         <li><strong>下一步 / 上一步</strong>：一步一步走，随时回看（注意：这是教学回看，不是 SQL 的 <code>ROLLBACK</code>）；</li>
         <li><strong>点左侧步骤</strong>：直接跳到某一步；</li>
-        <li><strong>播放 / 暂停</strong>：自动逐步推进，每步停留 5 秒（教学节奏，与实测耗时无关）；</li>
-        <li><strong>证据表</strong>：随步骤展开，记录每一步"动了什么、看到了什么证据"；</li>
-        <li><strong>边界与假设</strong>：页面顶部黄色区块是这个演示的简化声明，看之前先扫一眼。</li>
+        <li><strong>播放 / 暂停</strong>：自动逐步推进，速度可切换 0.5× / 1× / 2×（教学节奏，与实测耗时无关）；</li>
+        <li><strong>事件流与检查器</strong>：底部事件流记录每一步"动了什么、看到了什么证据"，点任意行打开检查器看细节；</li>
+        <li><strong>边界与假设</strong>：右侧黄色区块是这个演示的简化声明，看之前先扫一眼。</li>
       </ul>
 
-      <h2 id="sec-3">交互演示区</h2>
+      <h2 id="sec-3">进入交互实验室</h2>
+      <p>
+        <a href="app/index.html"><strong>▶ 打开交互实验室（全屏应用）</strong></a>
+        ——网络 / 时序双视图、事件流、步骤检查器、明暗主题。应用是纯静态页面，
+        双击 <code>app/index.html</code> 或经 <code>serve.ps1</code> 都能打开；浏览器需启用 JavaScript。
+      </p>
       <noscript>
         <p>
-          （当前浏览器未启用 JavaScript，交互演示不可用。下面"步骤一览"是静态版本，仍可通读；
-          想看交互版请在浏览器中启用 JavaScript 后刷新本页。）
+          （当前浏览器未启用 JavaScript，交互应用不可用。下面"步骤一览"是静态版本，仍可通读。）
         </p>
       </noscript>
-      <div id="lab-root"></div>
 
       <h2 id="sec-4">步骤一览（静态版）</h2>
       <ol>
@@ -224,9 +227,5 @@ a:hover { text-decoration: underline; }
 <script defer src="../assets/site/search-index.js"></script>
 <script defer src="../assets/site/ui.js"></script>
 <!-- shell:bottom:end -->
-<link rel="stylesheet" href="engine/step-player.css">
-<script src="scenes/sql-journey-select.js"></script>
-<script src="engine/step-player.js"></script>
-<script>StepPlayer.mount(document.getElementById('lab-root'));</script>
 </body>
 </html>
