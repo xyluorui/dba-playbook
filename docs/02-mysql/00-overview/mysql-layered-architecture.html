@@ -296,6 +296,11 @@ flowchart TD
       <li><strong>返回结果</strong>：<strong>边读边发</strong>，不是把结果全部算完再发。数据先写入连接的 <code>net_buffer</code>（默认 16KB），写满后再写到 socket 发送缓冲区，客户端读走后继续。因此大结果集不会撑爆服务端内存，但客户端读得慢会让线程停在 <code>Sending to client</code> 状态。</li>
       </ol>
       <p>观察：<code>SHOW PROCESSLIST;</code> 或 <code>performance_schema.threads</code> 看线程当前状态。</p>
+      <aside class="lab-callout">
+        <strong>交互实验</strong>
+        <a href="../../../labs/app/index.html?from=architecture">单步观察一条 SELECT 的旅程</a>
+        <p>切换拓扑图和时序图，对照每一步的组件、动作和证据。也可以阅读<a href="../../../labs/demo-sql-journey.html#sec-4">静态步骤</a>。</p>
+      </aside>
       <h2 id="sec-9">5. 一条 UPDATE 的旅程（预览）</h2>
       <p>UPDATE 前半段和 SELECT 一样（连接 → 解析 → 预处理 → 优化），区别在执行阶段还要<strong>写日志、改页、加锁</strong>。</p>
       <!-- mermaid

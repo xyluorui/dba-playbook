@@ -343,6 +343,11 @@ flowchart LR
       <li>写操作（INSERT / UPDATE / DELETE）的执行器流程多了加锁、undo、redo、binlog，见事务、锁、日志章节。</li>
       </ul>
       <h2 id="sec-16">6. 执行计划 EXPLAIN</h2>
+      <aside class="lab-callout">
+        <strong>交互实验</strong>
+        <a href="../../../labs/app/index.html?from=explain">打开《一条 SELECT 的旅程》</a>
+        <p>走到优化器这一步，对照示例 <code>EXPLAIN</code> 的访问类型和索引字段。也可以阅读<a href="../../../labs/demo-sql-journey.html#sec-4">静态步骤</a>。</p>
+      </aside>
       <h3 id="sec-17">6.1 四种用法</h3>
       <div class="table-wrap"><table>
       <thead><tr><th>命令</th><th>说明</th></tr></thead>

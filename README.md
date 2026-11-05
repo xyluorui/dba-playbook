@@ -30,11 +30,14 @@
 
 ## 怎么用
 
-- **本地浏览站点** → `powershell -File scripts/site/serve.ps1`，浏览器打开 `http://127.0.0.1:8600`（导航 / 全文搜索 / 图表渲染，双击任意 `.html` 也能看）
-- **系统学习** → 从 `docs/` 进入，按主题阅读
-- **排障救火** → 先搜 `cases/` 里同类问题，再照 `runbooks/` 执行
-- **记录新案例** → `python scripts/site/new-doc.py --type case --dir cases/<问题域> --slug <slug> --title "..."`，填写后跑 `build.py` 刷新站点
+- **本地浏览** → 使用 Node.js 24，首次运行 `npm ci`，再运行 `npm run dev`，打开本地服务下的 `/dba-playbook/`。要验证全文搜索，先运行 `npm run check`，再运行 `npm run preview`。
+- **查知识或做实验** → 从首页搜索，或进入 MySQL、Redis 专区。实验室可逐步观察 SQL 的执行过程。
+- **排障救火** → 从「实战」查同类案例、操作手册和脚本。
+- **新增知识** → 用 `python scripts/site/new-doc.py` 创建独立 HTML，补充正文与元信息，更新所在目录 README。构建会自动将页面纳入导航和搜索。
 - **找脚本** → `scripts/` 各目录 README 索引
+- **离线阅读** → 在浏览器或 Obsidian 中打开内容 HTML。在浏览器中可直接打开 [SELECT 实验](labs/app/index.html)。
+
+构建与写作命令见 [站点工具](scripts/site/README.md)。
 
 ## 内容约定
 
@@ -51,4 +54,4 @@
 - 主力方向：MySQL、Redis
 - 更新方式：随手记录 + 定期整理，案例复盘后把通用规律反哺到 docs/
 - 内容格式：文档以 HTML 存放（`README.md` / `AGENTS.md` / `CONTRIBUTING.md` 等规范文档保留 Markdown）
-- 在线地址：`https://<GitHub 用户名>.github.io/dba-playbook/`（push 到 main 由 GitHub Actions 自动发布，见 [scripts/site/README.md](scripts/site/README.md)）
+- 在线站点由 GitHub Actions 发布 `main` 的 Astro 构建产物。项目路径为 `/dba-playbook/`，部署地址可在工作流中查看。

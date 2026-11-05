@@ -1,0 +1,14 @@
+---
+import type { GetStaticPaths } from 'astro';
+import DirectoryPage from '../../components/DirectoryPage.astro';
+import { directories } from '../../lib/content';
+
+export const getStaticPaths = (() => directories.map((directory) => ({
+  params: { directory: directory.path.slice(0, -'/index.html'.length) },
+  props: { directory },
+}))) satisfies GetStaticPaths;
+
+const { directory } = Astro.props;
+---
+
+<DirectoryPage {directory} />

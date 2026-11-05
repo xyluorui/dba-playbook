@@ -1,0 +1,91 @@
+---
+interface Props {
+  html: string;
+}
+
+const { html } = Astro.props;
+---
+
+<div class="content" set:html={html}></div>
+
+<style>
+  .content { min-width: 0; overflow-wrap: anywhere; line-height: 1.85; }
+  .content > :global(:first-child) { margin-top: 0; }
+  .content > :global(:last-child) { margin-bottom: 0; }
+  .content :global(h2), .content :global(h3), .content :global(h4) {
+    line-height: 1.45;
+    scroll-margin-top: 6rem;
+  }
+  .content :global(h2) {
+    margin: 2.1em 0 .6em;
+    padding-bottom: .45em;
+    border-bottom: 1px solid var(--line);
+    font-size: 1.42rem;
+  }
+  .content :global(h3) { margin: 1.65em 0 .5em; font-size: 1.14rem; }
+  .content :global(p), .content :global(ul), .content :global(ol) { margin: .7em 0 1em; }
+  .content :global(ul), .content :global(ol) { padding-inline-start: 1.4em; }
+  .content :global(li + li) { margin-top: .2em; }
+  .content :global(a) { color: var(--accent); text-decoration: underline; text-underline-offset: .2em; }
+  .content :global(code) { font-family: var(--mono); font-size: .9em; }
+  .content :global(:not(pre) > code) {
+    padding: .12em .35em;
+    background: var(--surface-raised);
+    border-radius: .3em;
+  }
+  .content :global(pre) {
+    overflow: auto;
+    margin: 1em 0;
+    padding: .95em 1em;
+    border: 1px solid var(--line);
+    border-radius: .65em;
+    color: #e4edf8;
+    background: #101a2a;
+    font: .9rem/1.65 var(--mono);
+  }
+  .content :global(pre code) { font-size: inherit; }
+  .content :global(.hljs-keyword), .content :global(.hljs-selector-tag) { color: #93c5fd; }
+  .content :global(.hljs-string), .content :global(.hljs-regexp) { color: #a7f3d0; }
+  .content :global(.hljs-number), .content :global(.hljs-literal) { color: #fcd34d; }
+  .content :global(.hljs-comment) { color: #a4b4c8; }
+  .content :global(.hljs-built_in), .content :global(.hljs-type) { color: #c4b5fd; }
+  .content :global(blockquote), .content :global(.version) {
+    margin: 0 0 1.2em;
+    padding: .6em .95em;
+    border-inline-start: 3px solid var(--accent);
+    border-radius: 0 .5em .5em 0;
+    background: var(--surface-raised);
+  }
+  .content :global(blockquote > :first-child) { margin-top: 0; }
+  .content :global(blockquote > :last-child) { margin-bottom: 0; }
+  .content :global(.table-wrap) { overflow-x: auto; }
+  .content :global(table) {
+    width: 100%;
+    margin: .8em 0 1.2em;
+    border-collapse: collapse;
+    font-size: .93rem;
+  }
+  .content :global(th), .content :global(td) {
+    padding: .55em .72em;
+    border: 1px solid var(--line);
+    text-align: start;
+    vertical-align: top;
+  }
+  .content :global(th), .content :global(tbody tr:nth-child(even)) { background: var(--surface); }
+  .content :global(.diagram) {
+    overflow-x: auto;
+    display: grid;
+    justify-items: center;
+    padding: 1rem;
+    margin: 1em 0;
+    border-radius: .6rem;
+    color-scheme: light;
+    background: #f8fafc;
+  }
+  .content :global(img), .content :global(svg) { max-width: 100%; height: auto; }
+  .content :global(hr) { border: 0; border-top: 1px solid var(--line); margin: 2rem 0; }
+  @media (max-width: 560px) {
+    .content :global(th), .content :global(td) { padding: .4em; }
+    .content :global(.diagram) { padding: .65rem; }
+  }
+</style>

@@ -1,296 +1,326 @@
-/*
- * app.js —— 交互实验室主控制器
- * 用途: 状态管理 + 各面板渲染 + 播放控件 + 主题切换 + 进度统计
- * 用法: 页面底部依次引入 scenes/*.js、topology.js、sequence.js、inspector.js、app.js
- * 日期: 2026-11-05
- */
+/* 实验播放器。当前步号驱动图示、证据、检查器及事件流。 */
 (function () {
   'use strict';
 
-  var S = {
-    scene: null,
-    current: 0,          // 已推进到第几步（0 = 未开始）
-    maxDone: 0,          // 到达过的最大步数（用于进度）
-    view: 'topology',    // topology | sequence
-    playing: false,
+  const scenes = window.LAB_SCENES;
+  const state = {
+    scene: scenes[0],
+    current: 0,
+    view: 'topology',
     speed: 1,
     timer: null,
-    catFilter: '全部'
+    category: '全部'
   };
 
-  var $ = function (id) { return document.getElementById(id); };
+  const byId = (id) => document.getElementById(id);
+  const viewButtons = document.querySelectorAll('[data-view][type="button"]');
+  const next = byId('btn-next');
+  const prev = byId('btn-prev');
+  const play = byId('btn-play');
+  const speed = byId('btn-speed');
+  const inspector = byId('inspector');
+  const inspectorSummary = inspector.querySelector('summary');
+  const canvas = byId('canvas');
 
-  /* ── 主题 ── */
+  function append(parent, tag, text) {
+    const element = document.createElement(tag);
+    element.textContent = text;
+    parent.appendChild(element);
+    return element;
+  }
+
   function initTheme() {
-    var saved = localStorage.getItem('lab-theme');
-    if (saved) document.documentElement.setAttribute('data-theme', saved);
-    $('theme-toggle').addEventListener('click', function () {
-      var cur = document.documentElement.getAttribute('data-theme') === 'dark' ? '' : 'dark';
-      if (cur) document.documentElement.setAttribute('data-theme', 'dark');
-      else document.documentElement.removeAttribute('data-theme');
-      localStorage.setItem('lab-theme', cur);
-      drawCanvas();
-    });
-  }
+    const root = document.documentElement;
+    const button = byId('theme-toggle');
 
-  /* ── 目录 ── */
-  function renderCatalog() {
-    var cats = ['全部'];
-    window.LAB_CATALOG.forEach(function (u) {
-      if (cats.indexOf(u.category) < 0) cats.push(u.category);
-    });
-    var tabs = $('cat-tabs');
-    tabs.innerHTML = '';
-    cats.forEach(function (c) {
-      var b = document.createElement('button');
-      b.className = c === S.catFilter ? 'on' : '';
-      b.innerHTML = esc(c) + '<span class="n">' + catCount(c) + '</span>';
-      b.addEventListener('click', function () { S.catFilter = c; renderCatalog(); });
-      tabs.appendChild(b);
-    });
-
-    var list = $('cat-list');
-    list.innerHTML = '';
-    window.LAB_CATALOG.forEach(function (u) {
-      if (S.catFilter !== '全部' && u.category !== S.catFilter) return;
-      var wrap = document.createElement('div');
-      wrap.className = 'cat-unit';
-      wrap.innerHTML = '<div class="unit-name"><span>' + esc(u.unit) + '</span>' +
-        '<span class="tag">' + esc(u.category) + '</span></div>';
-
-      (u.scenes || []).forEach(function (sid) {
-        var sc = sceneById(sid);
-        if (!sc) return;
-        wrap.appendChild(sceneCard(sc));
-      });
-
-      if (u.planned) {
-        var p = document.createElement('div');
-        p.className = 'cat-planned';
-        p.innerHTML = '<b>开发中（P1 起）</b>' + esc(u.planned);
-        wrap.appendChild(p);
-      }
-      list.appendChild(wrap);
-    });
-  }
-
-  function catCount(c) {
-    if (c === '全部') return window.LAB_CATALOG.reduce(function (n, u) { return n + (u.scenes || []).length; }, 0);
-    return window.LAB_CATALOG.reduce(function (n, u) {
-      return n + (u.category === c ? (u.scenes || []).length : 0);
-    }, 0);
-  }
-
-  function sceneCard(sc) {
-    var div = document.createElement('div');
-    div.className = 'scene-card' + (S.scene && sc.id === S.scene.id ? ' on' : '');
-    div.innerHTML =
-      '<div class="row"><span class="radio"></span><span class="t">' + esc(sc.title) + '</span>' +
-      '<span class="status">' + esc(sc.status) + '</span></div>' +
-      '<div class="sub">' + esc(sc.subtitle) + '</div>';
-    div.addEventListener('click', function () { selectScene(sc.id); });
-
-    if (S.scene && sc.id === S.scene.id) {
-      var ol = document.createElement('ol');
-      ol.className = 'scene-steps';
-      sc.steps.forEach(function (s) {
-        var li = document.createElement('li');
-        li.className = (S.current > s.no ? 'done ' : '') + (S.current === s.no ? 'current' : '');
-        li.innerHTML = '<span class="no">' + s.no + '</span>' +
-          '<span class="st"><b>' + esc(s.title) + '</b>' +
-          '<span class="layer-chip">' + esc(layerName(s.layer)) + '</span></span>';
-        li.addEventListener('click', function (e) { e.stopPropagation(); goTo(s.no); });
-        ol.appendChild(li);
-      });
-      div.appendChild(ol);
+    function label() {
+      const nextTheme = root.dataset.theme === 'light' ? '深色' : '浅色';
+      button.textContent = nextTheme;
+      button.setAttribute('aria-label', '切换到' + nextTheme + '主题');
     }
-    return div;
+
+    label();
+    button.hidden = false;
+    button.addEventListener('click', () => {
+      root.dataset.theme = root.dataset.theme === 'light' ? 'dark' : 'light';
+      try {
+        localStorage.setItem('dba-playbook-theme', root.dataset.theme);
+      } catch {
+        // 本地文件或禁用存储时，仍可在本页切换主题。
+      }
+      label();
+    });
   }
 
-  /* ── 头部 ── */
-  function renderHeader() {
-    var sc = S.scene;
-    $('hdr-title').innerHTML = esc(sc.title) + '<small>共 ' + sc.steps.length + ' 步</small>';
-    var dots = $('hdr-steps');
-    dots.innerHTML = '';
-    sc.steps.forEach(function (s) {
-      var i = document.createElement('i');
-      if (S.current > s.no) i.className = 'done';
-      else if (S.current === s.no) i.className = 'current';
-      dots.appendChild(i);
-    });
-    var pct = Math.round((S.maxDone / sc.steps.length) * 100);
-    $('hdr-pct').textContent = pct + '%';
-    $('hdr-bar').style.width = pct + '%';
-    $('hdr-count').textContent = '已完成 ' + S.maxDone + ' / ' + sc.steps.length + ' 步';
+  function initBackLink() {
+    const from = new URLSearchParams(window.location.search).get('from');
+    const back = byId('back-to-reading');
+
+    if (from === 'explain') {
+      back.href = '../../docs/02-mysql/01-sql-layer/sql-execution-and-explain.html#sec-16';
+      back.textContent = '← 返回 SQL 层与执行计划';
+    } else if (from === 'architecture') {
+      back.href = '../../docs/02-mysql/00-overview/mysql-layered-architecture.html#sec-8';
+      back.textContent = '← 返回 MySQL 分层架构';
+    }
   }
 
-  /* ── 右侧概览 ── */
-  function renderInfo() {
-    var sc = S.scene;
-    $('info-title').textContent = sc.title;
-    $('info-status').textContent = sc.status;
-    $('info-desc').textContent = sc.description;
+  function renderCatalog() {
+    const tabs = byId('catalog-tabs');
+    const list = byId('catalog-list');
+    const categories = ['全部', ...new Set(window.LAB_CATALOG.map((unit) => unit.category))];
+    const hadFocus = tabs.contains(document.activeElement);
+    tabs.replaceChildren();
+    list.replaceChildren();
 
-    var meta = $('info-meta');
-    meta.innerHTML = '';
-    sc.meta.forEach(function (m) {
-      var row = document.createElement('div');
-      row.className = 'meta-row';
-      row.innerHTML = '<span class="k">' + esc(m.k) + '</span><span class="v">' +
-        (m.href ? '<a href="' + esc(m.href) + '" target="_blank" rel="noopener">' + esc(m.v) + '</a>' : esc(m.v)) +
-        '</span>';
-      meta.appendChild(row);
-    });
-
-    var as = $('info-assump');
-    as.innerHTML = '';
-    sc.assumptions.forEach(function (a) {
-      var li = document.createElement('li');
-      li.textContent = a;
-      as.appendChild(li);
-    });
-
-    $('info-challenge').innerHTML =
-      '<span class="label">迁移挑战</span><p>' + esc(sc.challenge.prompt) + '</p>' +
-      '<details class="ans"><summary>看提示答案</summary><p>' + esc(sc.challenge.answer) + '</p></details>';
-  }
-
-  /* ── 事件流表 ── */
-  function renderEvents() {
-    var sc = S.scene;
-    var body = $('ev-body');
-    body.innerHTML = '';
-    sc.steps.forEach(function (s) {
-      var tr = document.createElement('tr');
-      tr.className = (S.current === s.no ? 'current ' : '') + (S.current < s.no ? 'future' : '');
-      var color = layerColor(s.layer);
-      tr.innerHTML =
-        '<td><span class="num"><i class="' + color + '">' + s.no + '</i></span></td>' +
-        '<td class="t">' + esc(s.time) + '</td>' +
-        '<td>' + esc(layerName(s.layer)) + '</td>' +
-        '<td class="obj">' + esc(s.evidence[0] ? s.evidence[0].object : '') + '</td>' +
-        '<td class="act">' + esc(s.evidence[0] ? s.evidence[0].action : '') + '</td>' +
-        '<td class="res">' + esc(s.evidence[0] ? s.evidence[0].result : '') + '</td>';
-      tr.addEventListener('click', function () {
-        goTo(s.no);
-        openInspector(s.no);
+    categories.forEach((category) => {
+      const button = append(tabs, 'button', category);
+      button.type = 'button';
+      button.className = 'button';
+      button.setAttribute('aria-pressed', String(category === state.category));
+      button.addEventListener('click', () => {
+        state.category = category;
+        renderCatalog();
       });
-      body.appendChild(tr);
+      if (hadFocus && category === state.category) button.focus();
     });
 
-    var legend = $('ev-legend');
-    legend.innerHTML = sc.layers.map(function (l) {
-      return '<span><i class="' + colorClass(l.color) + '"></i>' + esc(l.name.replace(/（.*/, '')) + '</span>';
-    }).join('') + '<span class="sep"></span><span>点任意行打开检查器</span>';
+    window.LAB_CATALOG.forEach((unit) => {
+      if (state.category !== '全部' && state.category !== unit.category) return;
+      const item = append(list, 'div', '');
+      append(item, 'h3', unit.unit);
+      unit.scenes.forEach((id) => {
+        const scene = scenes.find((entry) => entry.id === id);
+        if (!scene) return;
+        const button = append(item, 'button', scene.title);
+        button.type = 'button';
+        button.className = 'button';
+        button.setAttribute('aria-pressed', String(scene === state.scene));
+        button.addEventListener('click', () => {
+          if (scene !== state.scene) {
+            stopPlay();
+            state.scene = scene;
+            state.current = 0;
+            inspector.open = false;
+            renderScene();
+            renderCatalog();
+            renderStep();
+          }
+          next.focus();
+        });
+      });
+      if (unit.planned) append(item, 'p', '待建设 · ' + unit.planned);
+    });
   }
 
-  /* ── 画布 ── */
+  function renderScene() {
+    const scene = state.scene;
+    byId('lab-category').textContent = scene.category;
+    byId('lab-title').textContent = scene.title;
+    byId('lab-question').textContent = scene.question;
+    byId('lab-version').textContent = scene.version;
+    byId('lab-engine').textContent = scene.engine;
+    byId('lab-input-label').textContent = scene.input.label;
+    const input = byId('lab-input');
+    input.textContent = scene.input.text;
+    input.className = 'language-' + scene.input.language;
+    byId('step-command').querySelector('code').className = input.className;
+    byId('challenge-prompt').textContent = scene.challenge.prompt;
+    byId('challenge-answer').textContent = scene.challenge.answer;
+
+    const assumptions = byId('lab-assumptions');
+    const references = byId('lab-references');
+    const steps = byId('step-links');
+    const events = byId('event-rows');
+    [assumptions, references, steps, events].forEach((element) => element.replaceChildren());
+
+    scene.assumptions.forEach((note) => append(assumptions, 'li', note));
+    scene.references.forEach((reference) => {
+      append(append(references, 'li', ''), 'a', reference.title).href = reference.href;
+    });
+
+    const layerNames = new Map(scene.layers.map((layer) => [layer.id, layer.name]));
+    scene.steps.forEach((step) => {
+      const item = append(steps, 'li', '');
+      const button = append(item, 'button', String(step.no));
+      button.type = 'button';
+      button.dataset.step = step.no;
+      button.title = step.title;
+      button.setAttribute('aria-label', '第 ' + step.no + ' 步，' + step.title);
+      button.addEventListener('click', () => seek(step.no));
+
+      step.evidence.forEach((entry) => {
+        const row = append(events, 'tr', '');
+        row.dataset.step = step.no;
+        const label = append(append(row, 'td', ''), 'button', step.no + ' · ' + step.title);
+        label.type = 'button';
+        label.className = 'event-link';
+        [step.time, layerNames.get(step.layer), entry.object, entry.action, entry.result]
+          .forEach((field) => append(row, 'td', field));
+        row.addEventListener('click', () => {
+          seek(step.no);
+          inspector.open = true;
+          inspectorSummary.focus();
+        });
+      });
+    });
+  }
+
   function drawCanvas() {
-    var svg = $('canvas-svg');
-    if (S.view === 'topology') TopologyView.render(svg, S.scene, S.current);
-    else SequenceView.render(svg, S.scene, S.current, function (no) { goTo(no); });
-    $('stage-hint').textContent = S.current === 0
-      ? '点「单步」开始，或点左侧步骤跳转'
-      : '第 ' + S.current + ' / ' + S.scene.steps.length + ' 步 · ' + S.scene.steps[S.current - 1].title;
-  }
+    const svg = byId('canvas-svg');
+    canvas.dataset.view = state.view;
 
-  /* ── 检查器 ── */
-  function openInspector(no) {
-    Inspector.render($('inspector'), S.scene, no, {
-      onPrev: function () { goTo(no - 1); openInspector(no - 1); },
-      onNext: function () { goTo(no + 1); openInspector(no + 1); },
-      onClose: function () { Inspector.hide($('inspector')); }
+    if (state.view === 'topology') {
+      TopologyView.render(svg, state.scene, state.current);
+      canvas.removeAttribute('tabindex');
+      canvas.removeAttribute('role');
+      canvas.removeAttribute('aria-label');
+    } else {
+      SequenceView.render(svg, state.scene, state.current, seek);
+      canvas.tabIndex = 0;
+      canvas.setAttribute('role', 'region');
+      canvas.setAttribute('aria-label', '时序图，可横向滚动');
+    }
+    byId('diagram-scroll-hint').hidden = state.view !== 'sequence';
+
+    viewButtons.forEach((button) => {
+      button.setAttribute('aria-pressed', String(button.dataset.view === state.view));
     });
   }
 
-  /* ── 推进 ── */
-  function goTo(n) {
-    S.current = Math.max(0, Math.min(S.scene.steps.length, n));
-    if (S.current > S.maxDone) S.maxDone = S.current;
-    renderHeader();
-    renderCatalog();
-    renderEvents();
+  function renderStep() {
+    const steps = state.scene.steps;
+    const step = steps[state.current - 1];
+    const check = step?.check;
+
+    byId('step-counter').textContent = state.current + ' / ' + steps.length;
+    byId('step-title').textContent = step ? step.title : '准备开始';
+    byId('step-narration').textContent = step ? step.narration : '逐步观察高亮组件和可核对的证据。';
+    byId('diagram-caption').textContent = step ? '第 ' + step.no + ' 步 · ' + step.title : '高亮显示当前步骤';
+    byId('step-evidence').hidden = !check;
+
+    if (check) {
+      byId('step-check').textContent = check.instruction;
+      const command = byId('step-command');
+      command.hidden = !check.command;
+      command.querySelector('code').textContent = check.command || '';
+      const source = byId('step-source');
+      source.hidden = !check.source;
+      if (check.source) source.href = check.source;
+      byId('step-example').hidden = !check.example;
+      if (check.example) {
+        byId('example-title').textContent = check.example.title;
+        byId('example-output').textContent = check.example.text;
+      }
+    }
+
+    inspector.hidden = !step?.inspector;
+    if (!step) inspector.open = false;
+    Inspector.render(byId('inspector-body'), step?.inspector);
+
+    prev.disabled = state.current === 0;
+    next.disabled = state.current === steps.length;
+    next.textContent = state.current === 0 ? '开始实验' : next.disabled ? '实验完成' : '下一步';
+    byId('btn-reset').disabled = state.current === 0 && state.timer === null;
+
+    byId('step-links').querySelectorAll('button').forEach((button) => {
+      const number = Number(button.dataset.step);
+      button.classList.toggle('past', number < state.current);
+      if (number === state.current) button.setAttribute('aria-current', 'step');
+      else button.removeAttribute('aria-current');
+    });
+    byId('event-rows').querySelectorAll('tr').forEach((row) => {
+      row.classList.toggle('current', Number(row.dataset.step) === state.current);
+    });
+
     drawCanvas();
   }
 
+  function goTo(number) {
+    state.current = Math.max(0, Math.min(state.scene.steps.length, number));
+    renderStep();
+  }
+
   function stopPlay() {
-    if (S.timer) { clearInterval(S.timer); S.timer = null; S.playing = false; $('btn-play').textContent = '▶ 播放'; }
+    if (state.timer !== null) clearInterval(state.timer);
+    state.timer = null;
+    play.textContent = '自动播放';
+  }
+
+  function seek(number) {
+    stopPlay();
+    goTo(number);
+  }
+
+  function schedulePlayback() {
+    state.timer = setInterval(() => {
+      const nextStep = state.current + 1;
+      if (nextStep === state.scene.steps.length) stopPlay();
+      goTo(nextStep);
+    }, 3400 / state.speed);
+  }
+
+  function togglePlay() {
+    if (state.timer !== null) {
+      stopPlay();
+      return;
+    }
+
+    schedulePlayback();
+    play.textContent = '暂停';
+    if (state.current === state.scene.steps.length) goTo(1);
+    else if (state.current === 0) goTo(1);
   }
 
   function initControls() {
-    $('btn-next').addEventListener('click', function () { stopPlay(); goTo(S.current + 1); });
-    $('btn-prev').addEventListener('click', function () { stopPlay(); goTo(S.current - 1); });
-    $('btn-step').addEventListener('click', function () { stopPlay(); goTo(S.current + 1); });
-    $('btn-reset').addEventListener('click', function () {
-      stopPlay(); S.maxDone = 0; Inspector.hide($('inspector')); goTo(0);
+    prev.addEventListener('click', () => seek(state.current - 1));
+    next.addEventListener('click', () => seek(state.current + 1));
+    byId('btn-reset').addEventListener('click', () => {
+      seek(0);
+      next.focus();
     });
-    $('btn-play').addEventListener('click', function () {
-      if (S.playing) { stopPlay(); return; }
-      if (S.current >= S.scene.steps.length) { S.maxDone = 0; goTo(0); }
-      S.playing = true;
-      $('btn-play').textContent = '⏸ 暂停';
-      S.timer = setInterval(function () {
-        if (S.current >= S.scene.steps.length) { stopPlay(); return; }
-        goTo(S.current + 1);
-      }, 3400 / S.speed);
-    });
-    $('btn-speed').addEventListener('click', function () {
-      S.speed = S.speed === 1 ? 2 : S.speed === 2 ? 0.5 : 1;
-      $('btn-speed').textContent = S.speed + '×';
-      if (S.playing) { stopPlay(); $('btn-play').click(); }
+    play.addEventListener('click', togglePlay);
+    speed.addEventListener('click', () => {
+      state.speed = state.speed === 1 ? 2 : state.speed === 2 ? 0.5 : 1;
+      speed.textContent = state.speed + '×';
+      speed.setAttribute('aria-label', '播放速度 ' + state.speed + ' 倍，点击切换');
+      if (state.timer !== null) {
+        clearInterval(state.timer);
+        schedulePlayback();
+      }
     });
 
-    document.querySelectorAll('.view-tabs button').forEach(function (b) {
-      b.addEventListener('click', function () {
-        S.view = b.getAttribute('data-view');
-        document.querySelectorAll('.view-tabs button').forEach(function (x) { x.classList.remove('on'); });
-        b.classList.add('on');
+    viewButtons.forEach((button) => {
+      button.addEventListener('click', () => {
+        state.view = button.dataset.view;
         drawCanvas();
       });
     });
 
-    document.addEventListener('keydown', function (e) {
-      if (e.key === 'ArrowRight') { stopPlay(); goTo(S.current + 1); }
-      else if (e.key === 'ArrowLeft') { stopPlay(); goTo(S.current - 1); }
-      else if (e.key === ' ') { e.preventDefault(); $('btn-play').click(); }
-      else if (e.key === 'Escape') { Inspector.hide($('inspector')); }
+    document.addEventListener('keydown', (event) => {
+      if (event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey) return;
+      if (event.key === 'Escape' && inspector.open) {
+        inspector.open = false;
+        inspectorSummary.focus();
+        return;
+      }
+      if (event.target.closest('input, textarea, select, [contenteditable], [tabindex="0"]')) return;
+      if (event.key === 'ArrowRight' || event.key === 'ArrowLeft') {
+        event.preventDefault();
+        seek(state.current + (event.key === 'ArrowRight' ? 1 : -1));
+      } else if (event.key === ' ' && !event.target.closest('button, summary, a')) {
+        event.preventDefault();
+        togglePlay();
+      }
     });
   }
 
-  /* ── 工具 ── */
-  function esc(s) {
-    return String(s).replace(/[&<>"]/g, function (c) {
-      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
-    });
-  }
-  function sceneById(id) {
-    return window.LAB_SCENES.filter(function (s) { return s.id === id; })[0];
-  }
-  function layerName(id) {
-    if (!S.scene) return '';
-    var l = S.scene.layers.filter(function (x) { return x.id === id; })[0];
-    return l ? l.name : id;
-  }
-  function colorClass(c) {
-    return { blue: 'blue', green: 'green', amber: 'amber', purple: 'purple' }[c] || 'blue';
-  }
-  function layerColor(id) {
-    var l = S.scene.layers.filter(function (x) { return x.id === id; })[0];
-    return l ? colorClass(l.color) : 'blue';
-  }
-
-  /* ── 启动 ── */
-  function boot() {
-    S.scene = window.LAB_SCENES[0];
-    initTheme();
-    initControls();
-    renderCatalog();
-    renderHeader();
-    renderInfo();
-    renderEvents();
-    drawCanvas();
-  }
-
-  document.addEventListener('DOMContentLoaded', boot);
+  if (!state.scene) return;
+  initTheme();
+  initBackLink();
+  initControls();
+  renderScene();
+  renderCatalog();
+  renderStep();
+  byId('lab-player').hidden = false;
 })();

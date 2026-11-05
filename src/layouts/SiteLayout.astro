@@ -1,0 +1,73 @@
+---
+import Icon from '../components/Icon.astro';
+import SearchDialog from '../components/SearchDialog.astro';
+import { navigation, relativeHref, type SiteSection } from '../lib/links';
+import '../styles/site.css';
+
+interface Props {
+  title: string;
+  description?: string;
+  section?: SiteSection;
+  path: string;
+}
+const { title, description = 'MySQL 与 Redis 知识、交互实验和 DBA 实战手册。', section, path } = Astro.props;
+const root = relativeHref(path, 'index.html');
+const pagefind = relativeHref(path, 'pagefind/pagefind.js');
+---
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{section === 'home' ? 'DBA Playbook · 数据库知识库' : `${title} · DBA Playbook`}</title>
+    <meta name="description" content={description} />
+    <script is:inline>
+      try {
+        if (localStorage.getItem('dba-playbook-theme') === 'light') document.documentElement.dataset.theme = 'light';
+      } catch {}
+    </script>
+    <link rel="stylesheet" href={relativeHref(path, 'assets/site/tokens.css')} />
+    <slot name="head" />
+  </head>
+  <body>
+    <a class="skip-link" href="#site-main">跳到内容</a>
+    <header class="site-header">
+      <div class="site-header-inner">
+        <a class="site-brand" href={root} aria-label="DBA Playbook 首页">
+          <span class="site-brand-mark"><Icon name="database" size={20} /></span>
+          <span>DBA <strong>Playbook</strong></span>
+        </a>
+        <nav class="site-nav" aria-label="主导航">
+          {navigation.map((item) => (
+            <a href={relativeHref(path, item.path)} class:list={{ 'is-active': section === item.section }} aria-current={path === item.path ? 'page' : undefined}>{item.title}</a>
+          ))}
+        </nav>
+        <div class="site-actions">
+          <button class="site-search-trigger" type="button" data-open-search aria-label="搜索全站">
+            <Icon name="search" size={17} /><span>搜索</span><kbd>Ctrl K</kbd>
+          </button>
+          <button class="site-theme-toggle" type="button" aria-label="切换主题" aria-pressed="false" data-theme-toggle>
+            <Icon name="sun" size={19} class="theme-sun" />
+            <Icon name="moon" size={19} class="theme-moon" />
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <main id="site-main" class="site-main" tabindex="-1">
+      <slot />
+    </main>
+
+    <footer class="site-footer">
+      <div class="page-container site-footer-inner">
+        <a href={root} class="site-footer-brand">DBA Playbook</a>
+        <span>个人数据库知识库与实战手册</span>
+        <a href={relativeHref(path, 'docs/index.html')}>全部知识</a>
+        <a href={relativeHref(path, 'templates/index.html')}>模板</a>
+      </div>
+    </footer>
+
+    <SearchDialog {pagefind} />
+    <script is:inline src={relativeHref(path, 'assets/site/shell.js')}></script>
+  </body>
+</html>

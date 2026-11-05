@@ -289,7 +289,7 @@ window.__SITE_NAV__ = [
   ]
  },
  {
-  "title": "交互实验室（labs）",
+  "title": "交互实验室",
   "path": "labs/index.html",
   "pages": [
    {

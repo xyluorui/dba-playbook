@@ -1,0 +1,35 @@
+/* Shared by the knowledge site and the standalone experiment. */
+:root {
+  color-scheme: dark;
+  --bg: #101412;
+  --surface: #171c19;
+  --surface-raised: #202622;
+  --line: #313a33;
+  --line-strong: #49564b;
+  --text: #eef2ea;
+  --muted: #aab7aa;
+  --accent: #d0ed92;
+  --accent-ink: #1c2612;
+  --accent-soft: #28341f;
+  --redis: #f2b3a1;
+  --redis-soft: #392822;
+  --sans: "Inter", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  --serif: "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+  --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+  --bg: #f5f6ef;
+  --surface: #fcfdf8;
+  --surface-raised: #eef0e7;
+  --line: #d6ddd1;
+  --line-strong: #a8b5a6;
+  --text: #1e2a22;
+  --muted: #505f53;
+  --accent: #40631f;
+  --accent-ink: #ffffff;
+  --accent-soft: #e0ebcf;
+  --redis: #9d4434;
+  --redis-soft: #f4e3db;
+}

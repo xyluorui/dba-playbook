@@ -1,0 +1,21 @@
+---
+const paths = {
+  database: 'M20 6c0 2.2-3.6 4-8 4S4 8.2 4 6m16 0c0-2.2-3.6-4-8-4S4 3.8 4 6m16 0v12c0 2.2-3.6 4-8 4s-8-1.8-8-4V6m16 6c0 2.2-3.6 4-8 4s-8-1.8-8-4',
+  search: 'M21 21l-4.35-4.35M19 11a8 8 0 1 1-16 0 8 8 0 0 1 16 0Z',
+  arrow: 'M5 12h14m-7-7 7 7-7 7',
+  diagonal: 'M7 17 17 7M7 7h10v10',
+  layers: 'm12 2 10 5-10 5L2 7l10-5Zm10 10-10 5-10-5m20 5-10 5-10-5',
+  flask: 'M9 3h6m-5 0v7l-5.5 8.5A2 2 0 0 0 6.2 22h11.6a2 2 0 0 0 1.7-3.5L14 10V3M7.5 16h9',
+  book: 'M12 7C9 4 5 4 2 5v15c3-1 7-1 10 2 3-3 7-3 10-2V5c-3-1-7-1-10 2Zm0 0v15',
+  terminal: 'm4 7 6 5-6 5m8 1h8',
+  sun: 'M12 2v2m0 16v2m10-10h-2M4 12H2m17.1-7.1-1.4 1.4M6.3 17.7l-1.4 1.4m14.2 0-1.4-1.4M6.3 6.3 4.9 4.9M16 12a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z',
+  moon: 'M20.9 13.4A9 9 0 0 1 10.6 3.1a9 9 0 1 0 10.3 10.3Z',
+  close: 'm6 6 12 12M18 6 6 18',
+  play: 'm8 5 11 7-11 7V5Z',
+};
+interface Props { name: keyof typeof paths; size?: number; class?: string }
+const { name, size = 20, class: className } = Astro.props;
+---
+<svg class={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+  <path d={paths[name]}></path>
+</svg>

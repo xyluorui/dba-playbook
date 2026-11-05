@@ -1,0 +1,167 @@
+---
+import SiteLayout from '../layouts/SiteLayout.astro';
+import RichText from './RichText.astro';
+import { articlesByPath, directoriesByPath, sectionLabels, statusLabel, type ContentArticle } from '../lib/content';
+import { relativeHref } from '../lib/links';
+
+interface Props {
+  article: ContentArticle;
+}
+
+const { article } = Astro.props;
+const { path, section, title, titleId, titleHtml, description, meta, outline } = article;
+const isGeneralKnowledge = path.startsWith('docs/') && section === 'practice';
+const href = (target: string) => relativeHref(path, target);
+const directory = directoriesByPath.get(article.directory);
+const [root, group] = path.split('/');
+const scopePath = root === 'docs' && group ? `docs/${group}/index.html` : `${root}/index.html`;
+const scope = directoriesByPath.get(scopePath) ?? directory;
+const relatedTopics = (scope?.childPaths ?? []).map((path) => directoriesByPath.get(path)!);
+const relatedPages = (scope?.articlePaths ?? []).map((path) => articlesByPath.get(path)!);
+const tags = Array.from(new Set((meta.tags ?? '').split(/[,，]/).map((tag) => tag.trim())))
+  .filter((tag) => tag && tag !== meta.category);
+const currentTopic = (topicPath: string) => path.startsWith(topicPath.slice(0, -'index.html'.length));
+---
+
+<SiteLayout title={title} description={meta.description || description} section={isGeneralKnowledge ? undefined : section} path={path}>
+  <Fragment slot="head">
+    {Object.entries(meta).filter(([name]) => name !== 'description').map(([name, content]) => (
+      <meta name={name} content={content} />
+    ))}
+    <Fragment set:html={article.headStyles} />
+  </Fragment>
+
+  <div class="page-container article-page">
+    <nav aria-label="面包屑" class="article-crumbs">
+      <a href={href('index.html')}>首页</a>
+      {scope && <a href={href(scope.path)}>{scope.title}</a>}
+      {directory && directory.path !== scope?.path && <a href={href(directory.path)}>{directory.title}</a>}
+      <span aria-current="page">{title}</span>
+    </nav>
+
+    <div class="article-workspace">
+      <aside class="article-topics">
+        <nav aria-label="专题目录" class="article-sidepanel">
+          <p class="side-label">专题目录</p>
+          {scope && <a class="topic-root" href={href(scope.path)}>{scope.title}</a>}
+          <ul class="topic-list">
+            {relatedPages.map((page) => (
+              <li><a href={href(page.path)} aria-current={page.path === path ? 'page' : undefined}>{page.title}</a></li>
+            ))}
+            {relatedTopics.map((topic) => (
+              <li>
+                <a class:list={{ 'active-topic': currentTopic(topic.path) }} href={href(topic.path)}>{topic.title}</a>
+                {currentTopic(topic.path) && (
+                  <ul class="topic-articles">
+                    {(directory?.articlePaths ?? []).map((entry) => (
+                      <li><a href={href(entry)} aria-current={entry === path ? 'page' : undefined}>{articlesByPath.get(entry)!.title}</a></li>
+                    ))}
+                  </ul>
+                )}
+              </li>
+            ))}
+          </ul>
+        </nav>
+      </aside>
+
+      <article class="reader" data-pagefind-body={article.indexable ? true : undefined} data-pagefind-ignore={article.indexable ? undefined : 'all'}>
+        <header class="reader-heading">
+          <p class="reader-kicker" data-pagefind-filter="section" data-pagefind-meta="section">{isGeneralKnowledge ? '知识' : sectionLabels[section]}</p>
+          <h1 id={titleId} data-pagefind-meta="title" set:html={titleHtml} />
+          {article.indexable && (
+            <div class="article-meta" aria-label="文章信息">
+              {meta.database && <span data-pagefind-filter="database" data-pagefind-meta="database">{meta.database}</span>}
+              {meta.category && <span data-pagefind-filter="category" data-pagefind-meta="category">{meta.category}</span>}
+              {tags.map((tag) => <span>{tag}</span>)}
+              {meta.status && <span class:list={['article-status', { draft: meta.status === 'draft' }]}>{statusLabel(meta.status)}</span>}
+              {meta.date && <time datetime={meta.date}>{meta.date}</time>}
+            </div>
+          )}
+          {article.versionHtml && <RichText html={article.versionHtml} />}
+        </header>
+
+        <div class="mobile-article-nav" data-pagefind-ignore>
+          {scope && (
+            <details class="mobile-topics">
+              <summary>专题目录</summary>
+              <nav aria-label="专题目录">
+                <ul>
+                  <li><a href={href(scope.path)}>{scope.title}</a></li>
+                  {relatedPages.map((page) => <li><a href={href(page.path)} aria-current={page.path === path ? 'page' : undefined}>{page.title}</a></li>)}
+                  {relatedTopics.map((topic) => <li><a href={href(topic.path)}>{topic.title}</a></li>)}
+                </ul>
+              </nav>
+            </details>
+          )}
+          {outline.length > 0 && (
+            <details class="mobile-outline">
+              <summary>本文目录</summary>
+              <nav aria-label="本文目录">
+                <ul>
+                  {outline.map((entry) => <li class:list={{ 'subheading': entry.level === 3 }}><a href={`#${entry.id}`}>{entry.title}</a></li>)}
+                </ul>
+              </nav>
+            </details>
+          )}
+        </div>
+
+        <RichText html={article.html} />
+      </article>
+
+      <aside class="desktop-outline">
+        {outline.length > 0 && (
+          <nav class="article-sidepanel" aria-label="本文目录">
+            <p class="side-label">本文目录</p>
+            <ul>
+              {outline.map((entry) => <li class:list={{ 'subheading': entry.level === 3 }}><a href={`#${entry.id}`}>{entry.title}</a></li>)}
+            </ul>
+          </nav>
+        )}
+      </aside>
+    </div>
+  </div>
+</SiteLayout>
+
+<style>
+  .article-crumbs { display: flex; flex-wrap: wrap; gap: .25rem .62rem; margin-bottom: 1.7rem; font-size: .84rem; color: var(--muted); }
+  .article-crumbs > :not(:first-child)::before { content: '/'; margin-inline-end: .62rem; color: var(--muted); opacity: .7; }
+  .article-crumbs [aria-current='page'] { color: var(--text); }
+  .article-crumbs a:hover { color: var(--accent); }
+  .article-workspace { display: grid; grid-template-columns: minmax(0, 205px) minmax(0, 1fr) minmax(0, 204px); gap: clamp(1.4rem, 3vw, 2.9rem); }
+  .article-sidepanel { position: sticky; top: 5.8rem; max-height: calc(100dvh - 6.8rem); overflow: auto; scrollbar-width: thin; }
+  .side-label { margin: 0 0 .65rem; color: var(--muted); font-size: .75rem; font-weight: 700; letter-spacing: .08em; }
+  .topic-root { display: block; padding: 0 .55rem .45rem; font-size: 1rem; font-weight: 700; }
+  .article-sidepanel ul, .mobile-article-nav ul { padding: 0; margin: 0; list-style: none; }
+  .article-sidepanel .topic-articles { margin: .3rem 0 .45rem .55rem; border-inline-start: 1px solid var(--line); }
+  .article-sidepanel li a, .mobile-article-nav li a { display: block; padding: .32rem .55rem; color: var(--muted); border-radius: .35rem; font-size: .86rem; overflow-wrap: anywhere; }
+  .article-sidepanel li a:hover, .mobile-article-nav li a:hover { color: var(--accent); }
+  .article-sidepanel a.active-topic { color: var(--text); font-weight: 700; }
+  .article-sidepanel a[aria-current='page'], .mobile-article-nav a[aria-current='page'] { color: var(--accent); background: var(--accent-soft); font-weight: 700; }
+  .desktop-outline { border-inline-start: 1px solid var(--line); padding-inline-start: 1.05rem; }
+  .subheading { padding-inline-start: .85rem; }
+  .reader { min-width: 0; padding-bottom: 4rem; }
+  .reader-heading { margin-bottom: 1.55rem; }
+  .reader-kicker { margin: 0 0 .45rem; color: var(--accent); font: 650 .78rem/1.4 var(--mono); letter-spacing: .11em; }
+  .reader h1 { margin: 0; font: 750 clamp(1.85rem, 3.5vw, 3rem)/1.22 var(--serif); letter-spacing: -.025em; overflow-wrap: anywhere; }
+  .article-meta { display: flex; flex-wrap: wrap; align-items: center; gap: .45rem; margin-top: .9rem; font-size: .77rem; color: var(--muted); }
+  .article-meta span { padding: .18rem .48rem; border: 1px solid var(--line); border-radius: .35rem; background: var(--surface); }
+  .article-meta .draft { border-color: color-mix(in srgb, var(--accent) 35%, var(--line)); }
+  .article-meta time { margin-inline-start: .15rem; }
+  .reader-heading :global(.content) { margin-top: 1.25rem; }
+  .mobile-article-nav, .mobile-topics { display: none; }
+  .mobile-article-nav { gap: .45rem; margin-bottom: 1.25rem; }
+  .mobile-article-nav details { padding: .55rem .8rem; border: 1px solid var(--line); border-radius: .5rem; background: var(--surface); }
+  .mobile-article-nav summary { cursor: pointer; font-size: .9rem; font-weight: 650; }
+  .mobile-article-nav ul { margin-top: .45rem; }
+  @media (max-width: 1060px) {
+    .article-workspace { grid-template-columns: minmax(0, 195px) minmax(0, 1fr); }
+    .desktop-outline { display: none; }
+    .mobile-article-nav { display: grid; }
+  }
+  @media (max-width: 740px) {
+    .article-workspace { display: block; }
+    .article-topics { display: none; }
+    .mobile-topics { display: block; }
+    .article-crumbs { margin-bottom: 1.3rem; }
+  }
+</style>

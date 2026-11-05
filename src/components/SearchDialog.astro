@@ -1,0 +1,21 @@
+---
+import Icon from './Icon.astro';
+const { pagefind } = Astro.props as { pagefind: string };
+---
+<dialog class="search-dialog" data-search-dialog data-pagefind-module={pagefind} aria-labelledby="search-title" data-pagefind-ignore>
+  <div class="search-dialog-top">
+    <h2 id="search-title">搜索知识库</h2>
+    <form method="dialog">
+      <button type="submit" class="search-close" aria-label="关闭搜索"><Icon name="close" size={20} /></button>
+    </form>
+  </div>
+  <label class="search-field">
+    <Icon name="search" size={20} />
+    <span class="visually-hidden">搜索关键词</span>
+    <input type="search" placeholder="例如 执行计划、EXPLAIN" autocomplete="off" data-search-input />
+  </label>
+  <div class="search-dialog-body">
+    <p class="search-status" role="status" data-search-status>输入关键词搜索文章、实验与实战内容。</p>
+    <ul class="search-results" data-search-results></ul>
+  </div>
+</dialog>

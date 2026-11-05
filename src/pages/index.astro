@@ -1,0 +1,85 @@
+---
+import Icon from '../components/Icon.astro';
+import SiteLayout from '../layouts/SiteLayout.astro';
+
+const topics = [
+  { label: 'MySQL', number: '01', tone: 'mysql', icon: 'database', title: '跟着一条 SQL 学 MySQL', description: '从连接与执行计划到 InnoDB、索引、事务和复制，按章节阅读或直接跳到要查的主题。', path: 'docs/02-mysql/index.html', action: '浏览 MySQL' },
+  { label: 'Redis', number: '02', tone: 'redis', icon: 'layers', title: '按主题查阅 Redis', description: '从架构、部署与持久化进入，也可以按高可用、性能、内存和监控查阅。', path: 'docs/04-redis/index.html', action: '浏览 Redis' },
+] as const;
+
+const references = [
+  { title: 'MySQL 分层架构', label: '原理', path: 'docs/02-mysql/00-overview/mysql-layered-architecture.html' },
+  { title: 'SQL 层与执行计划', label: '查询', path: 'docs/02-mysql/01-sql-layer/sql-execution-and-explain.html#sec-16' },
+  { title: '案例、操作手册和脚本', label: '实战', path: 'practice/index.html' },
+];
+---
+<SiteLayout title="首页" section="home" path="index.html">
+  <div class="page-container home-page">
+    <section class="home-hero" aria-labelledby="home-title">
+      <div class="hero-copy">
+        <p class="eyebrow"><span class="signal"></span> DATABASE FIELD GUIDE</p>
+        <h1 id="home-title">数据库知识库<span class="hero-period">.</span></h1>
+        <p class="hero-intro">查 MySQL 和 Redis 的原理与实战，用单步实验看清数据库内部发生了什么。</p>
+      </div>
+      <div class="hero-search">
+        <form role="search" class="home-search-form" data-search-form>
+          <Icon name="search" size={21} />
+          <label class="visually-hidden" for="home-search-input">搜索全站</label>
+          <input id="home-search-input" type="search" placeholder="搜主题、命令或关键词" />
+          <button type="submit" aria-label="搜索全站"><Icon name="arrow" size={20} /></button>
+        </form>
+        <div class="search-shortcuts">
+          <span>试试</span>
+          <button type="button" data-open-search data-search-term="执行计划">执行计划</button>
+          <button type="button" data-open-search data-search-term="EXPLAIN">EXPLAIN</button>
+          <button type="button" data-open-search data-search-term="InnoDB">InnoDB</button>
+        </div>
+        <noscript><p class="noscript-hint">开启 JavaScript 后可全文搜索，也可以直接浏览下方主题。</p></noscript>
+      </div>
+    </section>
+
+    <section class="home-topics" aria-labelledby="topics-title">
+      <div class="home-section-heading">
+        <h2 id="topics-title">浏览知识</h2>
+        <a class="text-link" href="docs/index.html">全部知识 <Icon name="arrow" size={16} /></a>
+      </div>
+      <div class="topic-grid">
+        {topics.map((topic) => (
+          <a class:list={['topic-card', topic.tone]} href={topic.path}>
+            <span class="topic-card-top">
+              <span class="topic-identity"><span class="topic-icon"><Icon name={topic.icon} size={21} /></span>{topic.label}</span>
+              <span class="topic-number">{topic.number} / 专题</span>
+            </span>
+            <span class="topic-title">{topic.title}</span>
+            <span class="topic-description">{topic.description}</span>
+            <span class="topic-action">{topic.action} <Icon name="arrow" size={17} /></span>
+          </a>
+        ))}
+      </div>
+    </section>
+
+    <div class="home-lower">
+      <section class="lab-feature" aria-labelledby="featured-title">
+        <div class="lab-feature-top">
+          <p class="eyebrow"><Icon name="flask" size={17} /> 交互实验室</p>
+          <a class="text-link" href="labs/index.html">所有实验 <Icon name="diagonal" size={15} /></a>
+        </div>
+        <h2 id="featured-title">一条 <span>SELECT</span> 的旅程</h2>
+        <p>跟踪 SQL 从客户端到 InnoDB 的路径。切换拓扑图和时序图，逐步查看执行证据。</p>
+        <div class="lab-path" aria-label="客户端、SQL 层、InnoDB、返回结果">
+          <span>客户端</span><Icon name="arrow" size={15} /><span>SQL 层</span><Icon name="arrow" size={15} /><span>InnoDB</span>
+        </div>
+        <a class="primary-link" href="labs/app/index.html"><Icon name="play" size={16} /> 开始实验</a>
+        <a class="secondary-link" href="labs/demo-sql-journey.html">查看静态步骤</a>
+      </section>
+      <section class="home-reference" aria-labelledby="reference-title">
+        <h2 id="reference-title">直接查阅</h2>
+        <ul>
+          {references.map((item) => (
+            <li><a href={item.path}><span><small>{item.label}</small>{item.title}</span><Icon name="diagonal" size={16} /></a></li>
+          ))}
+        </ul>
+      </section>
+    </div>
+  </div>
+</SiteLayout>

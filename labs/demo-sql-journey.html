@@ -173,8 +173,8 @@ a:hover { text-decoration: underline; }
 
       <h2 id="sec-1">这个演示是什么</h2>
       <p>
-        这是交互实验室（<code>labs/</code>）的<strong>第一个场景</strong>：把一条 <code>SELECT</code> 语句从客户端发出到结果返回的完整旅程，
-        拆成一步一步可以停下来观察的过程。当前还没有"改条件对比"的交互（那是 P1 起的实验形态）。
+        在这个实验里，你可以逐步观察一条 <code>SELECT</code> 语句从客户端发出到结果返回的过程。
+        每一步都标出当前组件、发生的动作和可核对的证据。
       </p>
       <p>
         设计方法见 <a href="../docs/06-methodology/interactive-learning-design.html">交互式学习体验设计方法</a>，
@@ -184,18 +184,17 @@ a:hover { text-decoration: underline; }
 
       <h2 id="sec-2">怎么用</h2>
       <ul>
-        <li><strong>下一步 / 上一步</strong>：一步一步走，随时回看（注意：这是教学回看，不是 SQL 的 <code>ROLLBACK</code>）；</li>
-        <li><strong>点左侧步骤</strong>：直接跳到某一步；</li>
-        <li><strong>播放 / 暂停</strong>：自动逐步推进，速度可切换 0.5× / 1× / 2×（教学节奏，与实测耗时无关）；</li>
-        <li><strong>事件流与检查器</strong>：底部事件流记录每一步"动了什么、看到了什么证据"，点任意行打开检查器看细节；</li>
-        <li><strong>边界与假设</strong>：右侧黄色区块是这个演示的简化声明，看之前先扫一眼。</li>
+        <li><strong>开始 / 下一步 / 上一步</strong>：逐步观察或回看教学画面。</li>
+        <li><strong>拓扑图 / 时序图</strong>：在组件关系和调用顺序之间切换，当前步骤会同步。</li>
+        <li><strong>播放 / 暂停</strong>：按所选速度逐步播放，速度表示教学节奏。</li>
+        <li><strong>如何核对</strong>：先读当前步骤的证据，按需展开检查器和事件记录。</li>
+        <li><strong>边界与假设</strong>：展开查看示例数据与省略的机制。</li>
       </ul>
 
       <h2 id="sec-3">进入交互实验室</h2>
       <p>
-        <a href="app/index.html"><strong>▶ 打开交互实验室（全屏应用）</strong></a>
-        ——网络 / 时序双视图、事件流、步骤检查器、明暗主题。应用是纯静态页面，
-        双击 <code>app/index.html</code> 或经 <code>serve.ps1</code> 都能打开；浏览器需启用 JavaScript。
+        <a href="app/index.html"><strong>打开《一条 SELECT 的旅程》</strong></a>。
+        交互页面支持双击本地 <code>app/index.html</code> 或在站点预览中打开，需要浏览器启用 JavaScript。
       </p>
       <noscript>
         <p>
@@ -209,14 +208,14 @@ a:hover { text-decoration: underline; }
         <li><strong>SQL 文本进入 SQL 层</strong>（连接层 → SQL 层）：会话把 SQL 文本交给 Server 层。</li>
         <li><strong>解析与预处理</strong>（SQL 层）：词法、语法分析生成解析树；语法错误在这一步报错。</li>
         <li><strong>优化器制定执行计划</strong>（SQL 层）：按成本选索引、定取数顺序；<code>EXPLAIN</code> 看到的就是它的产物。</li>
-        <li><strong>执行器调用 InnoDB 取数据</strong>（SQL 层 → InnoDB）：Buffer Pool 找页，未命中从磁盘读入；走二级索引时可能回表。</li>
+        <li><strong>执行器调用 InnoDB 取数据</strong>（SQL 层 → InnoDB）：按主键读取记录，画面演示 Buffer Pool 未命中时读入数据页的路径。</li>
         <li><strong>结果返回客户端</strong>（连接层）：结果集发回，只读查询结束。</li>
       </ol>
 
       <h2 id="sec-5">参考</h2>
       <ul>
-        <li><a href="../docs/02-mysql/00-overview/mysql-layered-architecture.html">MySQL 分层架构与一条 SQL 的旅程</a>（知识正文，本演示的静态参考）</li>
-        <li><a href="../docs/02-mysql/01-sql-layer/sql-execution-and-explain.html">SQL 层与执行计划</a>（步骤 3–4 的展开）</li>
+        <li><a href="../docs/02-mysql/00-overview/mysql-layered-architecture.html#sec-8">MySQL 分层架构与一条 SQL 的旅程</a>（知识正文，本演示的静态参考）</li>
+        <li><a href="../docs/02-mysql/01-sql-layer/sql-execution-and-explain.html#sec-16">SQL 层与执行计划</a>（核对优化器步骤）</li>
       </ul>
     </article>
 <!-- shell:bottom:start（同步工具：scripts/site/sync-shell.py） -->
