@@ -17,9 +17,11 @@ const rootCurrent = path === scope?.path ? 'page' : undefined;
   <div class="topic-workspace">
     <aside class="topic-sidebar" data-pagefind-ignore>
       <nav class="topic-nav desktop-topics" aria-label="专题目录">
-        <p class="topic-label">专题目录</p>
-        <a class="topic-root" href={rootHref} aria-current={rootCurrent}>{scope.title}</a>
-        <TopicLinks directory={scope} {path} />
+        <details open>
+          <summary class="topic-label">专题目录</summary>
+          <a class="topic-root" href={rootHref} aria-current={rootCurrent}>{scope.title}</a>
+          <TopicLinks directory={scope} {path} />
+        </details>
       </nav>
       <details class="compact-topics">
         <summary>专题目录 <span>{scope.title}</span></summary>
@@ -52,8 +54,15 @@ const rootCurrent = path === scope?.path ? 'page' : undefined;
     scrollbar-width: thin;
   }
   .topic-label {
-    margin: 0 0 .65rem .45rem;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    padding: .3rem .45rem;
+    margin-bottom: .3rem;
+    border-radius: .35rem;
+    background: var(--bg);
     color: var(--muted);
+    cursor: pointer;
     font-size: .75rem;
     font-weight: 700;
     letter-spacing: .08em;
@@ -74,6 +83,24 @@ const rootCurrent = path === scope?.path ? 'page' : undefined;
     overflow-wrap: anywhere;
   }
   .topic-nav :global(a:focus-visible) { outline-offset: -2px; }
+  .topic-nav :global(.topic-branch) { position: relative; }
+  .topic-nav :global(.topic-branch > a) { min-height: 2rem; padding-inline-end: 2.25rem; }
+  .topic-nav :global(.topic-children > summary) {
+    position: absolute;
+    inset-block-start: 0;
+    inset-inline-end: 0;
+    display: grid;
+    place-items: center;
+    width: 2rem;
+    height: 2rem;
+    border-radius: .35rem;
+    color: var(--muted);
+    cursor: pointer;
+  }
+  .topic-nav :global(.topic-children > summary::-webkit-details-marker) { display: none; }
+  .topic-nav :global(.topic-children[open] > summary svg) { transform: rotate(90deg); }
+  .topic-nav :global(.topic-children > summary:hover) { background: var(--surface-raised); color: var(--accent); }
+  .topic-nav :global(summary:focus-visible) { outline-offset: -2px; }
   .topic-nav .topic-root { margin-bottom: .35rem; color: var(--text); font-size: 1rem; font-weight: 700; }
   .topic-nav :global(.active-topic) { color: var(--text); font-weight: 700; }
   .topic-nav :global(a:hover) { color: var(--accent); }
@@ -94,7 +121,7 @@ const rootCurrent = path === scope?.path ? 'page' : undefined;
     }
     .desktop-topics { display: none; }
     .compact-topics { display: block; }
-    .compact-topics summary {
+    .compact-topics > summary {
       padding: .5rem .75rem;
       border: 1px solid var(--line);
       border-radius: .5rem;
@@ -103,7 +130,7 @@ const rootCurrent = path === scope?.path ? 'page' : undefined;
       font-size: .9rem;
       font-weight: 650;
     }
-    .compact-topics summary span { margin-inline-start: .4rem; color: var(--muted); font-weight: 400; }
+    .compact-topics > summary span { margin-inline-start: .4rem; color: var(--muted); font-weight: 400; }
     .compact-topics .topic-nav {
       position: absolute;
       inset: 100% 0 auto;
@@ -117,5 +144,7 @@ const rootCurrent = path === scope?.path ? 'page' : undefined;
       box-shadow: 0 .4rem 1.2rem #0004;
     }
     .compact-topics .topic-nav :global(a) { padding-block: .5rem; }
+    .compact-topics .topic-nav :global(.topic-branch > a) { min-height: 2.5rem; padding-inline-end: 2.75rem; }
+    .compact-topics .topic-nav :global(.topic-children > summary) { width: 2.5rem; height: 2.5rem; }
   }
 </style>

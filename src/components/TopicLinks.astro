@@ -1,4 +1,5 @@
 ---
+import Icon from './Icon.astro';
 import TopicLinks from './TopicLinks.astro';
 import { articlesByPath, directoriesByPath, type ContentDirectory } from '../lib/content';
 import { relativeHref } from '../lib/links';
@@ -22,14 +23,22 @@ const chapters = directory.childPaths.map((entry) => directoriesByPath.get(entry
     ))}
     {chapters.map((chapter) => {
       const active = path.startsWith(chapter.path.slice(0, -'index.html'.length));
+      const hasChildren = chapter.childPaths.length > 0 || chapter.articlePaths.length > 0;
       return (
-        <li>
+        <li class:list={{ 'topic-branch': hasChildren }}>
           <a
             href={relativeHref(path, chapter.path)}
             class:list={{ 'active-topic': active }}
             aria-current={path === chapter.path ? 'page' : undefined}
           >{chapter.title}</a>
-          {active && <TopicLinks directory={chapter} {path} />}
+          {hasChildren && (
+            <details class="topic-children" open={active}>
+              <summary aria-label={`${chapter.title}的子目录`}>
+                <Icon name="chevron" size={16} />
+              </summary>
+              <TopicLinks directory={chapter} {path} />
+            </details>
+          )}
         </li>
       );
     })}
