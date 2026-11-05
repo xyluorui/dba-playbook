@@ -9,6 +9,7 @@
 | `case-template.html` / `case-template.md` | 案例记录（`cases/`）：HTML 为写作模板，md 为字段规范 |
 | `postmortem-template.html` / `postmortem-template.md` | 故障复盘（正式复盘会/报告，比案例更完整） |
 | `runbook-template.html` / `runbook-template.md` | 操作手册（`runbooks/`） |
+| `experiment-card-template.md` | 交互实验设计卡（`labs/`）：字段规范，无 HTML 对应模板（设计卡是规划文档，Markdown 填写） |
 
 ## 维护规则
 

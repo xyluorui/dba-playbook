@@ -30,12 +30,13 @@ GENERATED_COMMENT = (
 )
 
 # 内容板块（导航侧边栏的一级节点，顺序即展示顺序）
-CONTENT_DIRS = ["docs", "cases", "runbooks", "scripts", "templates"]
+CONTENT_DIRS = ["docs", "cases", "runbooks", "labs", "scripts", "templates"]
 
 SECTION_LABELS = {
     "docs": "📚 体系化知识",
     "cases": "🧯 场景与案例",
     "runbooks": "📋 操作手册",
+    "labs": "🧪 交互实验室",
     "scripts": "🔧 可复用脚本",
     "templates": "🧩 模板",
 }
@@ -44,6 +45,7 @@ SECTION_BLURBS = {
     "docs": "原理、配置、方法论，按数据库与主题组织",
     "cases": "真实故障与问题的完整记录：现象→排查→根因→复盘",
     "runbooks": "可照做的 SOP：前置检查、步骤、验证、回滚",
+    "labs": "可交互的学习实验：单步演示、对照实验",
     "scripts": "巡检、分析、治理脚本，按数据库/语言组织",
     "templates": "案例、复盘、Runbook 标准模板",
 }
@@ -85,7 +87,8 @@ def rewrite_href(href: str) -> str:
         if base == "README.md":
             parent = os.path.dirname(norm)
             new = (parent + "/" if parent else "") + "index.html"
-        elif base in KEPT_MD_NAMES or norm.startswith("templates/"):
+        elif base in KEPT_MD_NAMES or norm.endswith("-template.md") or "templates/" in norm:
+            # 规范文档与模板（含 ../templates/ 相对路径、模板目录内裸文件名）保持 .md
             return href
         else:
             new = norm[:-3] + ".html"

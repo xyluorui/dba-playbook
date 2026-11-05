@@ -14,6 +14,7 @@ dba-playbook 是个人 DBA 知识库：沉淀数据库知识与真实场景处�
 | `docs/` | 体系化知识：原理、配置、方法论 | 单次事故记录（去 `cases/`） |
 | `cases/` | 单次真实事件的完整记录 | 泛泛的知识点（去 `docs/`） |
 | `runbooks/` | 可照做的 SOP | 原理展开（链接到 `docs/`） |
+| `labs/` | 交互学习实验：场景数据、单步引擎、演示页 | 知识正文（去 `docs/`） |
 | `scripts/` | 可运行、可复用的脚本 | 一次性命令片段（放文档代码块即可） |
 | `templates/` | 各类模板 | 实际内容 |
 | `assets/` | 图片等素材 | 大文件、数据导出 |
@@ -64,6 +65,7 @@ dba-playbook 是个人 DBA 知识库：沉淀数据库知识与真实场景处�
 | `docs/04-redis/AGENTS.md` | Redis 专项要求 |
 | `cases/AGENTS.md` | 案例记录要求 |
 | `runbooks/AGENTS.md` | 操作手册要求 |
+| `labs/AGENTS.md` | 交互实验要求 |
 | `scripts/AGENTS.md` | 脚本要求 |
 | `templates/AGENTS.md` | 模板维护规则 |
 

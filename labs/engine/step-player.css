@@ -1,0 +1,105 @@
+/* step-player.css — 单步引擎配套样式（P0 雏形）
+ * 用途: labs/ 演示页的实验区域版式：步骤列表、分层画面、证据表、播放控件
+ * 用法: <link rel="stylesheet" href="engine/step-player.css">
+ * 日期: 2026-11-05
+ */
+
+.lab {
+  margin: 1.2rem 0;
+  padding: 1.1rem 1.25rem;
+  border: 1px solid var(--border, #e4e7ed);
+  border-radius: .75rem;
+  background: var(--bg, #f6f7f9);
+}
+.lab-head { margin-bottom: .6rem; }
+.lab-title { margin: 0 0 .35rem; font-size: 1.25rem; border: 0; padding: 0; }
+.lab-badges { margin: .25rem 0 .55rem; display: flex; flex-wrap: wrap; gap: .35rem; }
+.lab-badges .badge {
+  display: inline-flex; font-size: .74rem; line-height: 1.6;
+  padding: .05rem .6rem; border-radius: 1rem;
+  border: 1px solid var(--border, #e4e7ed); color: var(--muted, #646a73);
+}
+.lab-badges .badge.db { color: var(--accent, #2563eb); border-color: var(--accent, #2563eb); font-weight: 600; }
+
+.lab-assumptions {
+  border-left: 4px solid var(--warn, #b45309);
+  background: color-mix(in srgb, var(--warn, #b45309) 8%, transparent);
+  padding: .55rem 1rem; border-radius: 0 .55rem .55rem 0;
+  font-size: .88rem; margin: .8rem 0 1.1rem;
+}
+.lab-assumptions ul { margin: .35rem 0 .15rem; padding-left: 1.35rem; }
+.lab-assumptions li { margin: .18rem 0; }
+
+.lab-main {
+  display: grid;
+  grid-template-columns: minmax(11rem, 1fr) minmax(16rem, 2fr) minmax(12rem, 1.4fr);
+  gap: 1rem; align-items: start;
+}
+.lab-main h3 { margin: 0 0 .55rem; font-size: .95rem; border: 0; padding: 0; }
+
+/* 步骤列表 */
+.lab-step-list { list-style: none; margin: 0; padding: 0; }
+.lab-step {
+  display: flex; gap: .55rem; align-items: baseline;
+  padding: .38rem .55rem; border-radius: .5rem; cursor: pointer;
+  border: 1px solid transparent;
+}
+.lab-step:hover { border-color: var(--accent, #2563eb); }
+.lab-step.is-done .lab-step-no { background: var(--ok, #15803d); border-color: var(--ok, #15803d); }
+.lab-step.is-current { background: var(--accent-soft, #eaf0fe); border-color: var(--accent, #2563eb); }
+.lab-step-no {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 1.55rem; height: 1.55rem; border-radius: 50%;
+  border: 1px solid var(--border, #e4e7ed); font-size: .78rem;
+}
+.lab-step-body { display: flex; flex-direction: column; line-height: 1.5; font-size: .88rem; }
+.lab-step-layer { font-size: .74rem; color: var(--muted, #646a73); }
+
+/* 画面：分层 */
+.lab-layer {
+  border: 1px solid var(--border, #e4e7ed); border-radius: .55rem;
+  padding: .45rem .65rem; margin: .42rem 0; background: var(--panel, #fff);
+}
+.lab-layer.is-active { border-color: var(--accent, #2563eb); box-shadow: 0 0 0 2px var(--accent-soft, #eaf0fe); }
+.lab-layer-name { font-size: .78rem; color: var(--muted, #646a73); margin-bottom: .3rem; }
+.lab-objects { display: flex; flex-wrap: wrap; gap: .35rem; }
+.lab-object {
+  font-size: .82rem; padding: .12rem .65rem; border-radius: 1rem;
+  border: 1px solid var(--border, #e4e7ed); background: var(--bg, #f6f7f9);
+}
+.lab-object.is-highlight {
+  background: var(--accent, #2563eb); border-color: var(--accent, #2563eb);
+  color: #fff; font-weight: 600;
+}
+
+/* 讲解 */
+.lab-narration { font-size: .92rem; margin: 0; line-height: 1.8; }
+
+/* 证据表 */
+.lab-evidence h3 { margin: 1.15rem 0 .55rem; font-size: .95rem; border: 0; padding: 0; }
+.lab-ev-table { width: 100%; border-collapse: collapse; font-size: .85rem; }
+.lab-ev-table th, .lab-ev-table td {
+  padding: .42rem .65rem; text-align: left; vertical-align: top;
+  border-bottom: 1px solid var(--border, #e4e7ed);
+}
+.lab-ev-table th { background: var(--code-bg, #f3f5f8); white-space: nowrap; }
+.lab-ev-table tr.is-current td { background: var(--accent-soft, #eaf0fe); }
+
+/* 控件 */
+.lab-controls {
+  display: flex; flex-wrap: wrap; align-items: center; gap: .55rem;
+  margin-top: 1.05rem; padding-top: .85rem; border-top: 1px dashed var(--border, #e4e7ed);
+}
+.lab-btn {
+  font: inherit; font-size: .88rem; padding: .38rem 1.05rem;
+  border-radius: .55rem; border: 1px solid var(--border, #e4e7ed);
+  background: var(--panel, #fff); color: var(--text, #1f2329); cursor: pointer;
+}
+.lab-btn:hover:not(:disabled) { border-color: var(--accent, #2563eb); }
+.lab-btn:disabled { opacity: .45; cursor: default; }
+.lab-btn-primary { background: var(--accent, #2563eb); border-color: var(--accent, #2563eb); color: #fff; font-weight: 600; }
+.lab-pos { font-size: .82rem; color: var(--muted, #646a73); margin-left: .3rem; }
+
+@media (max-width: 860px) {
+  .lab-main { grid-template-columns: 1fr; }
+}

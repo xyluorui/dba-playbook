@@ -13,5 +13,6 @@
 | [case-template.md](case-template.md) | 案例字段规范 | 2026-11-03 |
 | [postmortem-template.md](postmortem-template.md) | 复盘字段规范 | 2026-11-03 |
 | [runbook-template.md](runbook-template.md) | Runbook 字段规范 | 2026-11-03 |
+| [experiment-card-template.md](experiment-card-template.md) | 交互实验设计卡字段规范（`labs/`） | 2026-11-05 |
 
 > 写作规范见仓库根目录 `AGENTS.md` 与 `CONTRIBUTING.md`。

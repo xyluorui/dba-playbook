@@ -289,6 +289,18 @@ window.__SITE_NAV__ = [
   ]
  },
  {
+  "title": "交互实验室（labs）",
+  "path": "labs/index.html",
+  "pages": [
+   {
+    "title": "演示：一条 SELECT 的旅程（单步）",
+    "path": "labs/demo-sql-journey.html",
+    "status": "draft"
+   }
+  ],
+  "children": []
+ },
+ {
   "title": "可复用脚本",
   "path": "scripts/index.html",
   "pages": [],
