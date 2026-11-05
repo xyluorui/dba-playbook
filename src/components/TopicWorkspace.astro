@@ -16,20 +16,10 @@ const rootCurrent = path === scope?.path ? 'page' : undefined;
 {scope ? (
   <div class="topic-workspace">
     <aside class="topic-sidebar" data-pagefind-ignore>
-      <nav class="topic-nav desktop-topics" aria-label="专题目录">
-        <details open>
-          <summary class="topic-label">专题目录</summary>
-          <a class="topic-root" href={rootHref} aria-current={rootCurrent}>{scope.title}</a>
-          <TopicLinks directory={scope} {path} />
-        </details>
+      <nav class="topic-nav" aria-label="专题目录">
+        <a class="topic-root" href={rootHref} aria-current={rootCurrent}>{scope.title}</a>
+        <TopicLinks directory={scope} {path} />
       </nav>
-      <details class="compact-topics">
-        <summary>专题目录 <span>{scope.title}</span></summary>
-        <nav class="topic-nav" aria-label="专题目录">
-          <a class="topic-root" href={rootHref} aria-current={rootCurrent}>{scope.title}</a>
-          <TopicLinks directory={scope} {path} />
-        </nav>
-      </details>
     </aside>
     <div class="topic-content"><slot /></div>
   </div>
@@ -48,24 +38,10 @@ const rootCurrent = path === scope?.path ? 'page' : undefined;
     align-self: start;
     min-width: 0;
   }
-  .desktop-topics {
+  .topic-nav {
     max-height: calc(100dvh - var(--site-header-height) - 2rem);
     overflow-y: auto;
     scrollbar-width: thin;
-  }
-  .topic-label {
-    position: sticky;
-    top: 0;
-    z-index: 1;
-    padding: .3rem .45rem;
-    margin-bottom: .3rem;
-    border-radius: .35rem;
-    background: var(--bg);
-    color: var(--muted);
-    cursor: pointer;
-    font-size: .75rem;
-    font-weight: 700;
-    letter-spacing: .08em;
   }
   .topic-nav :global(ul) { padding: 0; margin: 0; list-style: none; }
   .topic-nav :global(ul ul) {
@@ -103,9 +79,11 @@ const rootCurrent = path === scope?.path ? 'page' : undefined;
     background: var(--accent-soft);
     font-weight: 700;
   }
-  .compact-topics { display: none; }
   @media (max-width: 740px) {
-    .topic-workspace { display: block; }
+    .topic-workspace {
+      --topic-nav-height: min(25dvh, 10rem);
+      display: block;
+    }
     .topic-sidebar {
       top: var(--site-header-height);
       z-index: 4;
@@ -113,31 +91,16 @@ const rootCurrent = path === scope?.path ? 'page' : undefined;
       padding-block: .3rem;
       background: var(--bg);
     }
-    .desktop-topics { display: none; }
-    .compact-topics { display: block; }
-    .compact-topics > summary {
-      padding: .5rem .75rem;
+    .topic-nav {
+      max-height: var(--topic-nav-height);
+      overscroll-behavior: contain;
+      padding: .3rem;
       border: 1px solid var(--line);
       border-radius: .5rem;
       background: var(--surface);
-      cursor: pointer;
-      font-size: .9rem;
-      font-weight: 650;
     }
-    .compact-topics > summary span { margin-inline-start: .4rem; color: var(--muted); font-weight: 400; }
-    .compact-topics .topic-nav {
-      position: absolute;
-      inset: 100% 0 auto;
-      max-height: min(55dvh, 26rem);
-      overflow-y: auto;
-      overscroll-behavior: contain;
-      padding: .5rem;
-      border: 1px solid var(--line-strong);
-      border-radius: .5rem;
-      background: var(--surface);
-      box-shadow: 0 .4rem 1.2rem #0004;
-    }
-    .compact-topics .topic-nav :global(a),
-    .compact-topics .topic-nav :global(.topic-children > summary) { padding-block: .5rem; }
+    .topic-nav :global(a),
+    .topic-nav :global(.topic-children > summary) { padding-block: .5rem; }
+    .topic-content :global([id]) { scroll-margin-top: calc(var(--topic-nav-height) + 1rem); }
   }
 </style>
