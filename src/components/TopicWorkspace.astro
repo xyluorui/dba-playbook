@@ -73,8 +73,7 @@ const rootCurrent = path === scope?.path ? 'page' : undefined;
     padding-inline-start: .35rem;
     border-inline-start: 1px solid var(--line);
   }
-  .topic-nav :global(a) {
-    display: block;
+  .topic-nav :global(a), .topic-nav :global(.topic-children > summary) {
     padding: .32rem .45rem;
     border-radius: .35rem;
     color: var(--muted);
@@ -82,22 +81,17 @@ const rootCurrent = path === scope?.path ? 'page' : undefined;
     text-decoration: none;
     overflow-wrap: anywhere;
   }
+  .topic-nav :global(a) { display: block; }
   .topic-nav :global(a:focus-visible) { outline-offset: -2px; }
-  .topic-nav :global(.topic-branch) { position: relative; }
-  .topic-nav :global(.topic-branch > a) { min-height: 2rem; padding-inline-end: 2.25rem; }
   .topic-nav :global(.topic-children > summary) {
-    position: absolute;
-    inset-block-start: 0;
-    inset-inline-end: 0;
-    display: grid;
-    place-items: center;
-    width: 2rem;
-    height: 2rem;
-    border-radius: .35rem;
-    color: var(--muted);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: .35rem;
     cursor: pointer;
   }
   .topic-nav :global(.topic-children > summary::-webkit-details-marker) { display: none; }
+  .topic-nav :global(.topic-children > summary svg) { flex: none; }
   .topic-nav :global(.topic-children[open] > summary svg) { transform: rotate(90deg); }
   .topic-nav :global(.topic-children > summary:hover) { background: var(--surface-raised); color: var(--accent); }
   .topic-nav :global(summary:focus-visible) { outline-offset: -2px; }
@@ -143,8 +137,7 @@ const rootCurrent = path === scope?.path ? 'page' : undefined;
       background: var(--surface);
       box-shadow: 0 .4rem 1.2rem #0004;
     }
-    .compact-topics .topic-nav :global(a) { padding-block: .5rem; }
-    .compact-topics .topic-nav :global(.topic-branch > a) { min-height: 2.5rem; padding-inline-end: 2.75rem; }
-    .compact-topics .topic-nav :global(.topic-children > summary) { width: 2.5rem; height: 2.5rem; }
+    .compact-topics .topic-nav :global(a),
+    .compact-topics .topic-nav :global(.topic-children > summary) { padding-block: .5rem; }
   }
 </style>

@@ -26,6 +26,8 @@ const overview = isMysql ? articlesByPath.get('docs/02-mysql/overview.html') : u
 const lab = isLabs ? articlesByPath.get('labs/demo-sql-journey.html') : undefined;
 const articles = directory.articlePaths.map((entry) => articlesByPath.get(entry)!)
   .filter((entry) => entry !== overview && entry !== lab);
+const isEmptyDirectory = !isLabs && articles.length === 0 && children.length === 0;
+const hasShortNotesPanel = isEmptyDirectory && Boolean(scope);
 const title = isLabs ? '交互实验室' : directory.title;
 const description = isMysql ? '沿着一条 SQL，从客户端读到存储引擎，也可以按专题查阅 MySQL 的核心机制。'
   : isRedis ? '按主题查阅 Redis 的架构、持久化、高可用与日常运维。'
@@ -138,7 +140,7 @@ const topicsHeading = isMysql ? '学习章节' : isRedis ? '知识专题' : isPr
         </section>
       )}
 
-      {!isLabs && !articles.length && !children.length && (
+      {isEmptyDirectory && (
         <section class="empty-panel">
           <h2>内容待补充</h2>
           <p>目录已建立。新增内容后，可在这里直接查看。</p>
@@ -148,10 +150,19 @@ const topicsHeading = isMysql ? '学习章节' : isRedis ? '知识专题' : isPr
       {isPractice && <a class="text-link" href={href('templates/index.html')}>查看记录模板 <Icon name="arrow" size={16} /></a>}
 
       {directory.readme && !isMysql && !isRedis && (
-        <details class="directory-notes">
-          <summary>{isLabs ? '场景数据与维护说明' : '目录说明与资料'}</summary>
-          <RichText html={directory.readme} />
-        </details>
+        <div class:list={['directory-notes-area', { 'short-notes-panel': hasShortNotesPanel }]}>
+          <details class="directory-notes">
+            <summary>{isLabs ? '场景数据与维护说明' : '目录说明与资料'}</summary>
+            <div
+              class="directory-notes-body"
+              tabindex={hasShortNotesPanel ? 0 : undefined}
+              role={hasShortNotesPanel ? 'region' : undefined}
+              aria-label={hasShortNotesPanel ? '目录说明正文' : undefined}
+            >
+              <RichText html={directory.readme} />
+            </div>
+          </details>
+        </div>
       )}
     </TopicWorkspace>
   </div>
@@ -190,12 +201,20 @@ const topicsHeading = isMysql ? '学习章节' : isRedis ? '知识专题' : isPr
   .topic-card-articles li + li { margin-top: .3rem; }
   .directory-article-list li { padding: .85rem 0; border-top: 1px solid var(--line); }
   .directory-article-list .directory-entry-meta { display: flex; flex-wrap: wrap; gap: .7rem; margin-top: .45rem; font-size: .75rem; }
-  .empty-panel, .directory-notes { margin-top: 1.25rem; padding: 1rem 1.1rem; border: 1px solid var(--line); border-radius: .6rem; }
+  .empty-panel, .directory-notes-area { margin-top: 1.25rem; }
+  .empty-panel, .directory-notes { padding: 1rem 1.1rem; border: 1px solid var(--line); border-radius: .6rem; }
   .empty-panel h2 { margin: 0 0 .3rem; font-size: 1.05rem; }
   .empty-panel p { margin: 0; color: var(--muted); font-size: .9rem; }
   .empty-panel .text-link, .directory-page > .text-link { margin-top: .65rem; }
   .directory-notes summary { cursor: pointer; color: var(--muted); font-weight: 650; }
-  .directory-notes :global(.content) { margin-top: .9rem; overflow-x: auto; }
+  .directory-notes-body { margin-top: .9rem; overflow-x: auto; }
+  .short-notes-panel {
+    --notes-body-height: clamp(10rem, 30dvh, 18rem);
+    /* Keep the shared grid height stable while the notes are folded. */
+    min-block-size: calc(var(--notes-body-height) + 5rem);
+  }
+  .short-notes-panel .directory-notes-body { max-block-size: var(--notes-body-height); overflow: auto; }
+  .directory-notes-body:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   .lab-feature { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, .7fr); align-items: center; gap: clamp(1rem, 5vw, 4rem); background: var(--surface); border: 1px solid var(--line); border-radius: .75rem; padding: clamp(1rem, 4vw, 2.4rem); }
   .lab-feature h2 { margin: .45rem 0 .35rem; font: 750 clamp(1.75rem, 4vw, 2.65rem)/1.1 var(--serif); }
   .lab-feature-copy > p { margin: 0; color: var(--muted); }

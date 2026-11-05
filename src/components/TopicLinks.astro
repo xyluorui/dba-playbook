@@ -7,15 +7,25 @@ import { relativeHref } from '../lib/links';
 interface Props {
   directory: ContentDirectory;
   path: string;
+  includeOverview?: boolean;
 }
 
-const { directory, path } = Astro.props;
+const { directory, path, includeOverview = false } = Astro.props;
 const articles = directory.articlePaths.map((entry) => articlesByPath.get(entry)!);
 const chapters = directory.childPaths.map((entry) => directoriesByPath.get(entry)!);
 ---
 
 {(articles.length > 0 || chapters.length > 0) && (
   <ul class="topic-links">
+    {includeOverview && (
+      <li>
+        <a
+          href={relativeHref(path, directory.path)}
+          aria-label={`章节概览 · ${directory.title}`}
+          aria-current={path === directory.path ? 'page' : undefined}
+        >章节概览</a>
+      </li>
+    )}
     {articles.map((article) => (
       <li>
         <a href={relativeHref(path, article.path)} aria-current={path === article.path ? 'page' : undefined}>{article.title}</a>
@@ -25,19 +35,17 @@ const chapters = directory.childPaths.map((entry) => directoriesByPath.get(entry
       const active = path.startsWith(chapter.path.slice(0, -'index.html'.length));
       const hasChildren = chapter.childPaths.length > 0 || chapter.articlePaths.length > 0;
       return (
-        <li class:list={{ 'topic-branch': hasChildren }}>
-          <a
-            href={relativeHref(path, chapter.path)}
-            class:list={{ 'active-topic': active }}
-            aria-current={path === chapter.path ? 'page' : undefined}
-          >{chapter.title}</a>
-          {hasChildren && (
+        <li>
+          {hasChildren ? (
             <details class="topic-children" open={active}>
-              <summary aria-label={`${chapter.title}的子目录`}>
+              <summary class:list={{ 'active-topic': active }}>
+                <span>{chapter.title}</span>
                 <Icon name="chevron" size={16} />
               </summary>
-              <TopicLinks directory={chapter} {path} />
+              <TopicLinks directory={chapter} {path} includeOverview />
             </details>
+          ) : (
+            <a href={relativeHref(path, chapter.path)} aria-current={path === chapter.path ? 'page' : undefined}>{chapter.title}</a>
           )}
         </li>
       );
