@@ -37,7 +37,7 @@ const chapters = directory.childPaths.map((entry) => directoriesByPath.get(entry
       return (
         <li>
           {hasChildren ? (
-            <details class="topic-children" open={active}>
+            <details class="topic-children" data-topic-path={chapter.path} open={active}>
               <summary class:list={{ 'active-topic': active }}>
                 <span>{chapter.title}</span>
                 <Icon name="chevron" size={16} />

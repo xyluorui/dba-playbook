@@ -26,7 +26,7 @@
     return found;
   }
 
-  function setupTopicSearch() {
+  function setupTopicDirectory() {
     const controls = document.querySelector('[data-topic-filter]');
     if (!controls) return;
     const sidebar = controls.closest('.topic-sidebar');
@@ -36,9 +36,49 @@
 
     const field = controls.querySelector('input');
     const message = nav.querySelector('[data-topic-status]');
-    const branches = [...tree.querySelectorAll('details')];
+    const branches = [...tree.querySelectorAll('details[data-topic-path]')];
+    const defaultOpen = branches.map((branch) => branch.open);
+    const branchStorageKey = 'dba-playbook-expanded-topics';
     const normalize = (text) => text.normalize('NFKC').toLowerCase();
     let unfiltered;
+
+    function readExpandedTopics() {
+      try {
+        const saved = JSON.parse(sessionStorage.getItem(branchStorageKey));
+        if (Array.isArray(saved)) return new Set(saved);
+      } catch {}
+      return new Set();
+    }
+
+    function restoreExpandedTopics() {
+      const expanded = readExpandedTopics();
+      branches.forEach((branch, index) => {
+        const open = defaultOpen[index] || expanded.has(branch.dataset.topicPath);
+        if (unfiltered) unfiltered.open[index] = open;
+        else branch.open = open;
+      });
+    }
+
+    function rememberExpandedTopics() {
+      const expanded = readExpandedTopics();
+      branches.forEach((branch, index) => {
+        const path = branch.dataset.topicPath;
+        // Search results open branches temporarily.
+        if (unfiltered?.open[index] ?? branch.open) expanded.add(path);
+        else expanded.delete(path);
+      });
+      try {
+        sessionStorage.setItem(branchStorageKey, JSON.stringify([...expanded]));
+      } catch {}
+    }
+
+    if (branches.length) {
+      restoreExpandedTopics();
+      window.addEventListener('pagehide', rememberExpandedTopics);
+      window.addEventListener('pageshow', (event) => {
+        if (event.persisted) restoreExpandedTopics();
+      });
+    }
 
     function update() {
       const query = normalize(field.value).trim();
@@ -76,7 +116,7 @@
     update();
   }
 
-  setupTopicSearch();
+  setupTopicDirectory();
 
   const themeToggle = document.querySelector('[data-theme-toggle]');
   const themeKey = 'dba-playbook-theme';
