@@ -149,7 +149,7 @@ const topicsHeading = isMysql ? '学习章节' : isRedis ? '知识专题' : isPr
 
       {isPractice && <a class="text-link" href={href('templates/index.html')}>查看记录模板 <Icon name="arrow" size={16} /></a>}
 
-      {!isChapterPreview && directory.readme && !isMysql && !isRedis && (
+      {directory.readme && !isMysql && !isRedis && (
         isLabs ? (
           <details class="lab-notes">
             <summary>场景数据与维护说明</summary>
