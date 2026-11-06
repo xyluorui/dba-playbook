@@ -58,7 +58,7 @@
 
     if (from === 'explain') {
       back.href = '../../docs/02-mysql/01-sql-layer/sql-execution-and-explain.html#sec-16';
-      back.textContent = '← 返回 SQL 层与执行计划';
+      back.textContent = '← 返回 Server 层与执行计划';
     } else if (from === 'architecture') {
       back.href = '../../docs/02-mysql/00-overview/mysql-layered-architecture.html#sec-8';
       back.textContent = '← 返回 MySQL 分层架构';

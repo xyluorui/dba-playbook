@@ -9,7 +9,7 @@ MySQL 体系化知识。目录按「一条 SQL 的旅程」组织成 12 章，�
 | 章 | 目录 | 主题 | 状态 |
 |------|------|------|------|
 | 00 | [00-overview/](00-overview/) | 总览：分层架构与一条 SQL 的旅程 | 已成文 |
-| 01 | [01-sql-layer/](01-sql-layer/) | SQL 层：解析、优化器、执行器、执行计划 | 已成文 |
+| 01 | [01-sql-layer/](01-sql-layer/) | Server 层（连接管理与 SQL 处理） | 已成文 |
 | 02 | [02-innodb/](02-innodb/) | InnoDB 架构：内存、磁盘、后台线程 | 待撰写 |
 | 03 | [03-index/](03-index/) | 索引：B+ Tree 与索引设计 | 待撰写 |
 | 04 | [04-transaction-mvcc/](04-transaction-mvcc/) | 事务与 MVCC | 待撰写 |

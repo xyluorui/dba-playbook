@@ -162,8 +162,8 @@ a:hover { text-decoration: underline; }
 <ul>
 <li class="h2"><a href="#sec-1">1. 一张图看全局</a></li>
 <li class="h2"><a href="#sec-2">2. 各层职责</a></li>
-<li class="h3"><a href="#sec-3">2.1 连接层</a></li>
-<li class="h3"><a href="#sec-4">2.2 SQL 层（Server）</a></li>
+<li class="h3"><a href="#sec-3">2.1 Server 层的连接管理</a></li>
+<li class="h3"><a href="#sec-4">2.2 Server 层的 SQL 处理</a></li>
 <li class="h3"><a href="#sec-5">2.3 存储引擎层</a></li>
 <li class="h3"><a href="#sec-6">2.4 文件层（8.0 datadir 里的主要文件）</a></li>
 <li class="h2"><a href="#sec-7">3. 谁在 Server 层，谁在引擎层</a></li>
@@ -207,12 +207,12 @@ flowchart TD
 </div>
       <p>三句话记忆：</p>
       <ul>
-      <li><strong>Server 层</strong>：管「SQL 怎么理解、怎么选方案、怎么执行」，与具体引擎无关。</li>
+      <li><strong>Server 层</strong>管理客户端连接与认证，并负责解析 SQL、选择执行计划和协调执行。</li>
       <li><strong>引擎层</strong>：管「数据怎么存、怎么取、事务和锁怎么做」，可插拔，通过统一的 Handler 接口和 Server 层对话。</li>
       <li><strong>文件层</strong>：最终落盘的东西。</li>
       </ul>
       <h2 id="sec-2">2. 各层职责</h2>
-      <h3 id="sec-3">2.1 连接层</h3>
+      <h3 id="sec-3">2.1 Server 层的连接管理</h3>
       <div class="table-wrap"><table>
       <thead><tr><th>要点</th><th>说明</th></tr></thead>
       <tbody><tr><td>通信协议</td><td>TCP / Unix Socket；客户端与服务端是<strong>半双工</strong>，一次只能一方发</td></tr>
@@ -227,7 +227,7 @@ flowchart TD
       <li>定期断开长连接，或在大查询后由应用主动重置。</li>
       <li>5.7+ 可以调用 <code>mysql_reset_connection</code> 重新初始化连接资源，不用重连也不用重新鉴权。</li>
       </ul>
-      <h3 id="sec-4">2.2 SQL 层（Server）</h3>
+      <h3 id="sec-4">2.2 Server 层的 SQL 处理</h3>
       <p>执行顺序：<strong>解析 → 预处理 → 优化 → 执行</strong>。</p>
       <div class="table-wrap"><table>
       <thead><tr><th>组件</th><th>职责</th><th>产出</th></tr></thead>
@@ -288,7 +288,7 @@ flowchart TD
       <h2 id="sec-8">4. 一条 SELECT 的旅程</h2>
       <p>以 <code>SELECT * FROM t WHERE k = 5;</code> 为例：</p>
       <ol>
-      <li><strong>建立连接</strong>：连接层完成 TCP 握手、认证，分配线程。</li>
+      <li>建立连接时，<strong>Server 层</strong>完成握手、认证并分配线程。</li>
       <li><strong>解析</strong>：词法、语法分析生成 AST。</li>
       <li><strong>预处理</strong>：确认表 <code>t</code>、列 <code>k</code> 存在，展开 <code>*</code>，检查权限；同时在表上加 <strong>MDL 读锁</strong>。</li>
       <li><strong>优化</strong>：评估走 <code>k</code> 的索引还是全表扫描，选成本最低的计划。</li>
@@ -345,8 +345,8 @@ sequenceDiagram
       <tr><td>redo log</td><td>固定两个文件</td><td>8.0.30+ 目录 + 动态调整容量</td></tr></tbody>
       </table></div>
       <h2 id="sec-11">7. 常见面试题</h2>
-      <p><strong>Q1：一条 SQL 在 MySQL 里是怎么执行的？</strong> 连接层建连认证 → 解析 → 预处理 → 优化 → 执行器调引擎取数 → 边读边发给客户端。更新操作还会涉及 undo、redo、binlog 和两阶段提交。</p>
-      <p><strong>Q2：为什么 MySQL 分 Server 层和引擎层？</strong> 把「SQL 通用能力」和「数据存储」解耦，引擎可插拔：换引擎不用改 SQL 层。代价是跨层功能（如 binlog 和 redo log）要靠额外机制协调一致。</p>
+      <p><strong>Q1：一条 SQL 在 MySQL 里是怎么执行的？</strong> Server 层建立连接并完成认证，随后解析、预处理、优化 SQL，再由执行器调用引擎取数并逐步返回给客户端。更新操作还会涉及 undo、redo、binlog 和两阶段提交。</p>
+      <p><strong>Q2：为什么 MySQL 分 Server 层和引擎层？</strong> Server 层通过统一接口调用可插拔的存储引擎，不同引擎可以共用 Server 层的连接管理和 SQL 处理流程。跨层功能需要协调，例如两阶段提交保证 binlog 和 InnoDB redo log 的一致性。</p>
       <p><strong>Q3：8.0 为什么删掉查询缓存？</strong> 任何表更新都会使该表的全部缓存失效，在写多读少或更新频繁的场景命中率极低，并且缓存的维护带来锁竞争。缓存应放在应用层（Redis 等）自行控制。</p>
       <p><strong>Q4：连接数过多怎么排查和处理？</strong> 看 <code>SHOW PROCESSLIST</code> 里都是什么状态（大量 Sleep 是连接泄漏或连接池配置过大，大量 Query 是慢 SQL 或锁等待）；处理：优化慢 SQL、限制 / 回收空闲连接（<code>wait_timeout</code>）、使用连接池或中间件；<code>max_connections</code> 调大只是缓解，不要当根治手段。</p>
       <p><strong>Q5：MySQL 长连接内存为什么会越涨越高？怎么办？</strong> 连接内的临时资源在断开前不会释放。定期断开长连接，或 5.7+ 用 <code>mysql_reset_connection</code> 重置。</p>
@@ -359,7 +359,7 @@ sequenceDiagram
       </ul>
       <h2 id="sec-12">8. 本章小结</h2>
       <ul>
-      <li>架构：连接层 → SQL 层（解析 / 预处理 / 优化 / 执行）→ 引擎层（Handler API）→ 文件层。</li>
+      <li>客户端通过 Server 层建立会话并提交 SQL，Server 层通过 Handler API 调用存储引擎。</li>
       <li>分界线：binlog、MDL、优化器在 Server；redo、undo、MVCC、行锁在 InnoDB。</li>
       <li>结果返回是流式的，更新则多出日志与锁的一整套机制。</li>
       <li>8.0 去掉了查询缓存，数据字典进了 InnoDB。</li>
@@ -367,7 +367,8 @@ sequenceDiagram
       <h2 id="sec-13">相关内容</h2>
       <ul>
       <li><a href="../overview.html">MySQL 知识总览</a>：体系大纲</li>
-      <li><a href="../01-sql-layer/sql-execution-and-explain.html">SQL 层：解析、优化器、执行器与执行计划</a>：下一章，深入 Server 层的执行过程</li>
+      <li>下一章详解 <a href="../01-sql-layer/sql-execution-and-explain.html">MySQL Server 层的 SQL 处理与执行计划</a></li>
+      <li>官方参考 <a href="https://dev.mysql.com/doc/refman/8.0/en/pluggable-storage-overview.html">MySQL 8.0 可插拔存储引擎架构</a></li>
       </ul>
     </article>
 <!-- shell:bottom:start（同步工具：scripts/site/sync-shell.py） -->

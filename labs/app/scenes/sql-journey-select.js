@@ -24,16 +24,16 @@ window.LAB_SCENES = [
     engine: 'InnoDB',
     references: [
       { title: 'MySQL 分层架构', href: '../../docs/02-mysql/00-overview/mysql-layered-architecture.html#sec-8' },
-      { title: 'SQL 层与执行计划', href: '../../docs/02-mysql/01-sql-layer/sql-execution-and-explain.html#sec-16' }
+      { title: 'Server 层与执行计划', href: '../../docs/02-mysql/01-sql-layer/sql-execution-and-explain.html#sec-16' }
     ],
     assumptions: [
       '示例表、事件时间、图示和输出均为教学构造。示例查询按主键点查，教学图选择所需页未命中的路径。',
-      '图中按职责分步，省略权限和网络协议细节。主键等值查询可能在优化期间读取 const 表。',
+      '连接管理和 SQL 处理是 Server 层的两个环节。图中省略权限和网络协议细节。主键等值查询可能在优化期间读取 const 表。',
       '单步和自动播放只表示学习节奏。事件时间为示例。'
     ],
     layers: [
-      { id: 'conn', name: '连接层', color: 'blue' },
-      { id: 'sql', name: 'SQL 层', color: 'green' },
+      { id: 'conn', name: '连接阶段', color: 'blue' },
+      { id: 'sql', name: 'SQL 处理', color: 'green' },
       { id: 'innodb', name: '引擎层', color: 'amber' },
       { id: 'file', name: '文件层', color: 'purple' }
     ],
@@ -49,7 +49,7 @@ window.LAB_SCENES = [
     sequenceActors: [
       { label: '客户端', objects: ['client'] },
       { label: '连接线程', objects: ['thread'] },
-      { label: 'SQL 层', objects: ['parser', 'optimizer', 'executor'] },
+      { label: 'SQL 处理', objects: ['parser', 'optimizer', 'executor'] },
       { label: 'InnoDB', objects: ['bp'] },
       { label: '文件层', objects: ['disk'] }
     ],
@@ -60,7 +60,7 @@ window.LAB_SCENES = [
         layer: 'conn',
         time: '0.000 s',
         links: [{ from: 'client', to: 'thread', label: '建立连接' }],
-        narration: '客户端发起连接，完成认证后获得一个会话。连接保持打开时，服务器可以列出该会话。',
+        narration: '客户端发起连接，Server 层完成认证后建立会话。连接保持打开时，服务器可以列出该会话。',
         highlight: ['client', 'thread'],
         check: {
           instruction: '在同一 MySQL 8.0 测试实例，用同账号打开第二个会话，执行下方命令查看第一个会话的 Id 和 Command。',
@@ -80,18 +80,18 @@ window.LAB_SCENES = [
       },
       {
         no: 2,
-        title: 'SQL 文本进入 SQL 层',
+        title: '会话提交 SQL 文本',
         layer: 'sql',
         time: '0.012 s',
         links: [{ from: 'thread', to: 'parser', label: '提交 SQL' }],
-        narration: '客户端在会话上提交 SELECT 文本。SQL 层接收这条语句并进入解析处理。',
+        narration: '客户端在会话上提交 SELECT 文本。Server 层将收到的语句交给解析器。',
         highlight: ['thread', 'parser'],
         check: {
           instruction: '在 MySQL 8.0 测试库执行示例查询。启用 Performance Schema 语句历史采集时，可对照该会话的 events_statements_history.SQL_TEXT。',
           source: 'https://dev.mysql.com/doc/refman/8.0/en/performance-schema-events-statements-history-table.html'
         },
         evidence: [
-          { object: 'SQL 层', action: '接收 SELECT 文本', result: '可通过客户端输入或已采集的 SQL_TEXT 核对语句' }
+          { object: 'Server 层', action: '接收 SELECT 文本', result: '可通过客户端输入或已采集的 SQL_TEXT 核对语句' }
         ],
         inspector: {
           fields: [

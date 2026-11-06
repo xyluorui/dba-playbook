@@ -204,18 +204,18 @@ a:hover { text-decoration: underline; }
 
       <h2 id="sec-4">步骤一览（静态版）</h2>
       <ol>
-        <li><strong>客户端发起连接</strong>（连接层）：建立连接、认证，拿到会话；一个连接由一个线程处理。</li>
-        <li><strong>SQL 文本进入 SQL 层</strong>（连接层 → SQL 层）：会话把 SQL 文本交给 Server 层。</li>
-        <li><strong>解析与预处理</strong>（SQL 层）：词法、语法分析生成解析树；语法错误在这一步报错。</li>
-        <li><strong>优化器制定执行计划</strong>（SQL 层）：按成本选索引、定取数顺序；<code>EXPLAIN</code> 看到的就是它的产物。</li>
-        <li><strong>执行器调用 InnoDB 取数据</strong>（SQL 层 → InnoDB）：按主键读取记录，画面演示 Buffer Pool 未命中时读入数据页的路径。</li>
-        <li><strong>结果返回客户端</strong>（连接层）：结果集发回，只读查询结束。</li>
+        <li><strong>客户端发起连接</strong>。Server 层完成认证并建立会话。MySQL 8.0 社区版默认每个连接由一个线程处理。</li>
+        <li><strong>会话提交 SQL 文本</strong>。Server 层把收到的语句交给解析器。</li>
+        <li><strong>解析与预处理</strong>。Server 层进行词法和语法分析，生成解析树。语法错误在这一步报错。</li>
+        <li><strong>优化器制定执行计划</strong>。Server 层按成本选择索引和取数顺序，用 <code>EXPLAIN</code> 可查看执行计划。</li>
+        <li><strong>执行器调用 InnoDB 取数据</strong>。按主键读取记录，画面演示 Buffer Pool 未命中时读入数据页的路径。</li>
+        <li><strong>结果返回客户端</strong>。Server 层发回结果集，只读查询结束。</li>
       </ol>
 
       <h2 id="sec-5">参考</h2>
       <ul>
         <li><a href="../docs/02-mysql/00-overview/mysql-layered-architecture.html#sec-8">MySQL 分层架构与一条 SQL 的旅程</a>（知识正文，本演示的静态参考）</li>
-        <li><a href="../docs/02-mysql/01-sql-layer/sql-execution-and-explain.html#sec-16">SQL 层与执行计划</a>（核对优化器步骤）</li>
+        <li><a href="../docs/02-mysql/01-sql-layer/sql-execution-and-explain.html#sec-16">Server 层与执行计划</a>（核对优化器步骤）</li>
       </ul>
     </article>
 <!-- shell:bottom:start（同步工具：scripts/site/sync-shell.py） -->

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>MySQL SQL 层：解析、优化器、执行器与执行计划 | DBA Playbook</title>
+<title>MySQL Server 层的 SQL 处理与执行计划 | DBA Playbook</title>
 <meta name="database" content="MySQL">
 <meta name="category" content="性能">
 <meta name="tags" content="索引, 慢查询, 参数">
@@ -155,7 +155,7 @@ a:hover { text-decoration: underline; }
   <main id="main">
 <!-- shell:top:end -->
     <article class="content">
-      <h1>MySQL SQL 层：解析、优化器、执行器与执行计划</h1>
+      <h1>MySQL Server 层的 SQL 处理与执行计划</h1>
 <!-- page-head:start（同步工具：scripts/site/sync-shell.py） -->
 <p class="meta"><span class="badge db">MySQL</span><span class="badge cat">性能</span><span class="badge">索引</span><span class="badge">慢查询</span><span class="badge">参数</span><span class="badge">2026-11-03</span><span class="badge status-draft">draft</span></p>
 <nav class="toc-inline" aria-label="本文目录"><details><summary>本文目录（35 节）</summary>
@@ -199,7 +199,7 @@ a:hover { text-decoration: underline; }
 <!-- page-head:end -->
       <blockquote>
       <p>适用：MySQL 8.0.x（与 5.7 的差异单独标注）。知识地图见 <a href="../overview.html">MySQL 知识总览</a>，上一章 <a href="../00-overview/mysql-layered-architecture.html">MySQL 总览：一条 SQL 的旅程</a>。</p>
-      <p>目标：说清一条 SQL 在 Server 层经历的四个阶段，理解优化器「为什么这样选」，并能熟练读懂执行计划。</p>
+      <p>Server 层负责连接管理与 SQL 处理。客户端建立会话后，Server 对提交的 SQL 进行解析、预处理、优化和执行。本文沿着这四步讲解执行计划，<a href="../00-overview/mysql-layered-architecture.html#sec-3">连接管理与认证</a>见架构总览。</p>
       </blockquote>
       <h2 id="sec-1">1. 本章全景</h2>
       <!-- mermaid

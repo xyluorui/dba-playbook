@@ -9,7 +9,7 @@ const topics = [
 
 const references = [
   { title: 'MySQL 分层架构', label: '原理', path: 'docs/02-mysql/00-overview/mysql-layered-architecture.html' },
-  { title: 'SQL 层与执行计划', label: '查询', path: 'docs/02-mysql/01-sql-layer/sql-execution-and-explain.html#sec-16' },
+  { title: 'Server 层与执行计划', label: '查询', path: 'docs/02-mysql/01-sql-layer/sql-execution-and-explain.html#sec-16' },
   { title: '案例、操作手册和脚本', label: '实战', path: 'practice/index.html' },
 ];
 ---
@@ -66,8 +66,8 @@ const references = [
         </div>
         <h2 id="featured-title">一条 <span>SELECT</span> 的旅程</h2>
         <p>跟踪 SQL 从客户端到 InnoDB 的路径。切换拓扑图和时序图，逐步查看执行证据。</p>
-        <div class="lab-path" aria-label="客户端、SQL 层、InnoDB、返回结果">
-          <span>客户端</span><Icon name="arrow" size={15} /><span>SQL 层</span><Icon name="arrow" size={15} /><span>InnoDB</span>
+        <div class="lab-path" aria-label="客户端、Server 层、InnoDB、返回结果">
+          <span>客户端</span><Icon name="arrow" size={15} /><span>Server 层</span><Icon name="arrow" size={15} /><span>InnoDB</span>
         </div>
         <a class="primary-link" href="labs/app/index.html"><Icon name="play" size={16} /> 开始实验</a>
         <a class="secondary-link" href="labs/demo-sql-journey.html">查看静态步骤</a>

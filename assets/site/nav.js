@@ -60,11 +60,11 @@ window.__SITE_NAV__ = [
       "children": []
      },
      {
-      "title": "01 · SQL 层：解析、优化器、执行器与执行计划",
+      "title": "01 · Server 层",
       "path": "docs/02-mysql/01-sql-layer/index.html",
       "pages": [
        {
-        "title": "MySQL SQL 层：解析、优化器、执行器与执行计划",
+        "title": "MySQL Server 层的 SQL 处理与执行计划",
         "path": "docs/02-mysql/01-sql-layer/sql-execution-and-explain.html",
         "status": "draft"
        }
