@@ -142,7 +142,13 @@ window.__SITE_NAV__ = [
    {
     "title": "Redis",
     "path": "docs/04-redis/index.html",
-    "pages": [],
+    "pages": [
+     {
+      "title": "Redis 核心概念与机制体系",
+      "path": "docs/04-redis/overview.html",
+      "status": "draft"
+     }
+    ],
     "children": [
      {
       "title": "架构与原理",
