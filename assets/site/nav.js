@@ -130,6 +130,49 @@ window.__SITE_NAV__ = [
       "path": "docs/02-mysql/11-algorithms/index.html",
       "pages": [],
       "children": []
+     },
+     {
+      "title": "企业级解决方案",
+      "path": "docs/02-mysql/solutions/index.html",
+      "pages": [
+       {
+        "title": "MySQL 企业级方案概览",
+        "path": "docs/02-mysql/solutions/overview.html",
+        "status": "draft"
+       }
+      ],
+      "children": [
+       {
+        "title": "01 · 高可用与容灾",
+        "path": "docs/02-mysql/solutions/01-high-availability/index.html",
+        "pages": [],
+        "children": []
+       },
+       {
+        "title": "02 · 扩展与流量接入",
+        "path": "docs/02-mysql/solutions/02-scaling-routing/index.html",
+        "pages": [],
+        "children": []
+       },
+       {
+        "title": "03 · 备份与恢复",
+        "path": "docs/02-mysql/solutions/03-backup-recovery/index.html",
+        "pages": [],
+        "children": []
+       },
+       {
+        "title": "04 · 监控与性能治理",
+        "path": "docs/02-mysql/solutions/04-observability/index.html",
+        "pages": [],
+        "children": []
+       },
+       {
+        "title": "05 · 迁移、变更与治理",
+        "path": "docs/02-mysql/solutions/05-migration-governance/index.html",
+        "pages": [],
+        "children": []
+       }
+      ]
      }
     ]
    },
@@ -151,46 +194,89 @@ window.__SITE_NAV__ = [
     ],
     "children": [
      {
-      "title": "架构与原理",
+      "title": "00 · 架构与原理",
       "path": "docs/04-redis/architecture/index.html",
       "pages": [],
       "children": []
      },
      {
-      "title": "集群与高可用",
+      "title": "03 · 集群与高可用",
       "path": "docs/04-redis/cluster-ha/index.html",
       "pages": [],
       "children": []
      },
      {
-      "title": "安装部署与配置基线",
+      "title": "01 · 安装部署与配置基线",
       "path": "docs/04-redis/deployment/index.html",
       "pages": [],
       "children": []
      },
      {
-      "title": "内存与大 key 分析",
+      "title": "05 · 内存与大 key 分析",
       "path": "docs/04-redis/memory-analysis/index.html",
       "pages": [],
       "children": []
      },
      {
-      "title": "监控与告警",
+      "title": "06 · 监控与告警",
       "path": "docs/04-redis/monitoring/index.html",
       "pages": [],
       "children": []
      },
      {
-      "title": "性能优化",
+      "title": "04 · 性能优化",
       "path": "docs/04-redis/performance/index.html",
       "pages": [],
       "children": []
      },
      {
-      "title": "持久化",
+      "title": "02 · 持久化",
       "path": "docs/04-redis/persistence/index.html",
       "pages": [],
       "children": []
+     },
+     {
+      "title": "企业级解决方案",
+      "path": "docs/04-redis/solutions/index.html",
+      "pages": [
+       {
+        "title": "Redis 企业级方案概览",
+        "path": "docs/04-redis/solutions/overview.html",
+        "status": "draft"
+       }
+      ],
+      "children": [
+       {
+        "title": "01 · 高可用与容灾",
+        "path": "docs/04-redis/solutions/01-high-availability/index.html",
+        "pages": [],
+        "children": []
+       },
+       {
+        "title": "02 · 扩展与流量接入",
+        "path": "docs/04-redis/solutions/02-scaling-routing/index.html",
+        "pages": [],
+        "children": []
+       },
+       {
+        "title": "03 · 备份与恢复",
+        "path": "docs/04-redis/solutions/03-backup-recovery/index.html",
+        "pages": [],
+        "children": []
+       },
+       {
+        "title": "04 · 监控与性能治理",
+        "path": "docs/04-redis/solutions/04-observability/index.html",
+        "pages": [],
+        "children": []
+       },
+       {
+        "title": "05 · 迁移、变更与治理",
+        "path": "docs/04-redis/solutions/05-migration-governance/index.html",
+        "pages": [],
+        "children": []
+       }
+      ]
      }
     ]
    },

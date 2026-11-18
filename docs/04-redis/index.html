@@ -153,26 +153,32 @@ a:hover { text-decoration: underline; }
         <nav class="crumb"><a href="../../index.html">首页</a> › <a href="../index.html">docs</a> › <span>04-redis</span></nav>
     <article class="content">
     <h1>Redis</h1>
-<p>Redis 体系化知识。从一条写命令出发，理解 key 的生命周期，以及命令执行、数据恢复与故障转移之间的关系。</p>
-<h2>索引</h2>
+<p>Redis 体系化知识。从一条写命令出发，理解 key 的生命周期、命令执行、数据恢复与故障转移，再按七个章节查阅专题。</p>
+<blockquote>
+<p>核心概念与机制总览见 <a href="overview.html">overview.html</a>。</p>
+</blockquote>
+<h2>基础原理与核心机制</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>章</th><th>目录</th><th>主题</th><th>状态</th></tr></thead>
+<tbody><tr><td>00</td><td><a href="architecture/index.html">architecture/</a></td><td>架构与原理</td><td>待撰写</td></tr>
+<tr><td>01</td><td><a href="deployment/index.html">deployment/</a></td><td>安装部署与配置基线</td><td>待撰写</td></tr>
+<tr><td>02</td><td><a href="persistence/index.html">persistence/</a></td><td>持久化</td><td>待撰写</td></tr>
+<tr><td>03</td><td><a href="cluster-ha/index.html">cluster-ha/</a></td><td>集群与高可用</td><td>待撰写</td></tr>
+<tr><td>04</td><td><a href="performance/index.html">performance/</a></td><td>性能优化</td><td>待撰写</td></tr>
+<tr><td>05</td><td><a href="memory-analysis/index.html">memory-analysis/</a></td><td>内存与大 key 分析</td><td>待撰写</td></tr>
+<tr><td>06</td><td><a href="monitoring/index.html">monitoring/</a></td><td>监控与告警</td><td>待撰写</td></tr></tbody>
+</table></div>
+<h2>企业级解决方案</h2>
+<p>从生产需求出发，梳理高可用、分片和托管服务等方案及选型权衡，见 <a href="solutions/index.html">企业级解决方案</a>。操作步骤和真实事件分别放在 <code>runbooks/</code> 和 <code>cases/</code>。</p>
+<h2>文档总索引</h2>
 <div class="table-wrap"><table>
 <thead><tr><th>文档</th><th>说明</th><th>更新时间</th></tr></thead>
-<tbody><tr><td><a href="overview.html">Redis 核心概念与机制体系</a></td><td>Redis 7.2.x 总览：数据类型、命令执行、过期与淘汰、RDB/AOF、复制、Sentinel、Cluster 和排查入口</td><td>2026-11-06</td></tr></tbody>
+<tbody><tr><td><a href="overview.html">Redis 核心概念与机制体系</a></td><td>Redis 7.2.x 总览：数据类型、命令执行、过期与淘汰、RDB/AOF、复制、Sentinel、Cluster 和排查入口</td><td>2026-11-06</td></tr>
+<tr><td><a href="solutions/overview.html">Redis 企业级方案概览</a></td><td>企业级方案入口与选型维度</td><td>2026-11-18</td></tr></tbody>
 </table></div>
 <blockquote>
 <p>写作规范见仓库根目录 <code>AGENTS.md</code> 与 <code>CONTRIBUTING.md</code>。</p>
 </blockquote>
-
-<h2>本页目录</h2>
-<ul class="auto-list">
-<li><a href="architecture/index.html">architecture/</a></li>
-<li><a href="cluster-ha/index.html">cluster-ha/</a></li>
-<li><a href="deployment/index.html">deployment/</a></li>
-<li><a href="memory-analysis/index.html">memory-analysis/</a></li>
-<li><a href="monitoring/index.html">monitoring/</a></li>
-<li><a href="performance/index.html">performance/</a></li>
-<li><a href="persistence/index.html">persistence/</a></li>
-</ul>
     </article>
 <!-- shell:bottom:start（同步工具：scripts/site/sync-shell.py） -->
   </main>

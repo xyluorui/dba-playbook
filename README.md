@@ -21,9 +21,9 @@
 | 目录 | 主题 |
 |------|------|
 | [docs/01-foundations/](docs/01-foundations/) | 通用基础：Linux、网络、存储、SQL |
-| [docs/02-mysql/](docs/02-mysql/) | MySQL：按「一条 SQL 的旅程」组织成 12 章，见 [学习地图](docs/02-mysql/overview.html) |
+| [docs/02-mysql/](docs/02-mysql/) | MySQL：按「一条 SQL 的旅程」组织核心机制，另设 [企业级解决方案](docs/02-mysql/solutions/) |
 | [docs/03-postgresql/](docs/03-postgresql/) | PostgreSQL（预留） |
-| [docs/04-redis/](docs/04-redis/) | Redis：从一条写命令串起数据模型、执行、内存、持久化和高可用，见 [核心概念与机制体系](docs/04-redis/overview.html) |
+| [docs/04-redis/](docs/04-redis/) | Redis：从写命令串起核心机制，另设 [企业级解决方案](docs/04-redis/solutions/) |
 | [docs/05-other-databases/](docs/05-other-databases/) | Oracle、MongoDB、Elasticsearch、TiDB/OceanBase 等 |
 | [docs/06-methodology/](docs/06-methodology/) | 方法论：性能分析、容量规划、故障定界、复盘、教学设计 |
 | [docs/07-process/](docs/07-process/) | 流程与制度：变更管理、值班 SOP、应急预案、安全合规 |

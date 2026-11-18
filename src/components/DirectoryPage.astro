@@ -14,7 +14,7 @@ interface Props {
 const { directory } = Astro.props;
 const { path, section } = directory;
 const scope = path.startsWith('docs/') ? topicScope(path) : undefined;
-const isChapterPreview = scope !== undefined && scope.path !== path;
+const isChapterPreview = scope !== undefined && scope.path !== path && !path.endsWith('/solutions/index.html');
 const href = (target: string) => relativeHref(path, target);
 const isMysql = path === 'docs/02-mysql/index.html';
 const isRedis = path === 'docs/04-redis/index.html';
@@ -23,17 +23,20 @@ const isPractice = path === 'practice/index.html';
 const isGeneralKnowledge = path.startsWith('docs/') && section === 'practice';
 const parent = directoriesByPath.get(posix.join(posix.dirname(posix.dirname(path)), 'index.html'));
 const children = directory.childPaths.map((entry) => directoriesByPath.get(entry)!);
-const overview = isMysql ? articlesByPath.get('docs/02-mysql/overview.html') : undefined;
+const solutions = (isMysql || isRedis) ? children.find((entry) => entry.path.endsWith('/solutions/index.html')) : undefined;
+const chapters = children.filter((entry) => entry !== solutions);
+const overview = isMysql ? articlesByPath.get('docs/02-mysql/overview.html')
+  : isRedis ? articlesByPath.get('docs/04-redis/overview.html') : undefined;
 const lab = isLabs ? articlesByPath.get('labs/demo-sql-journey.html') : undefined;
 const articles = directory.articlePaths.map((entry) => articlesByPath.get(entry)!)
   .filter((entry) => entry !== overview && entry !== lab);
 const isEmptyDirectory = !isLabs && articles.length === 0 && children.length === 0;
 const title = isLabs ? '交互实验室' : directory.title;
 const description = isMysql ? '沿着一条 SQL，从客户端读到存储引擎，也可以按专题查阅 MySQL 的核心机制。'
-  : isRedis ? '按主题查阅 Redis 的架构、持久化、高可用与日常运维。'
+  : isRedis ? '从一条写命令出发，理解 Redis 核心机制，也可以按章节查阅部署、持久化与高可用。'
   : isLabs ? '暂停在任意一步，观察数据库组件之间的交互，并用证据核对当前步骤。'
   : directory.description;
-const topicsHeading = isMysql ? '学习章节' : isRedis ? '知识专题' : isPractice ? '实战分类' : '下级目录';
+const topicsHeading = isMysql || isRedis ? '基础原理与核心机制' : isPractice ? '实战分类' : '下级目录';
 ---
 
 <SiteLayout title={title} description={description} section={isGeneralKnowledge ? undefined : section} path={path}>
@@ -51,8 +54,8 @@ const topicsHeading = isMysql ? '学习章节' : isRedis ? '知识专题' : isPr
         {description && <p class="directory-description">{description}</p>}
         {overview && (
           <div class="directory-actions">
-            <a class="primary-link" href={href(overview.path)}>打开 MySQL 学习地图 <Icon name="arrow" size={17} /></a>
-            <a class="secondary-link" href={href('labs/index.html')}>查看相关实验</a>
+            <a class="primary-link" href={href(overview.path)}>{isMysql ? '打开 MySQL 学习地图' : '打开 Redis 核心概念与机制体系'} <Icon name="arrow" size={17} /></a>
+            {isMysql && <a class="secondary-link" href={href('labs/index.html')}>查看相关实验</a>}
           </div>
         )}
       </header>
@@ -105,15 +108,15 @@ const topicsHeading = isMysql ? '学习章节' : isRedis ? '知识专题' : isPr
         </section>
       )}
 
-      {children.length > 0 && (
+      {chapters.length > 0 && (
         <section class="directory-section" aria-labelledby="directory-topics-heading">
           <div class="directory-section-heading">
             <h2 id="directory-topics-heading">{topicsHeading}</h2>
-            {(isMysql || isRedis) && <span>{children.length} 个主题</span>}
+            {(isMysql || isRedis) && <span>{chapters.length} 个章节</span>}
           </div>
           <ul class="topic-cards">
-            {children.map((topic) => {
-              const numbered = isMysql ? /^(\d+)\s*·\s*(.+)$/.exec(topic.title) : null;
+            {chapters.map((topic) => {
+              const numbered = (isMysql || isRedis) ? /^(\d+)\s*·\s*(.+)$/.exec(topic.title) : null;
               return (
                 <li class="topic-card">
                   <div class="topic-card-top">
@@ -137,6 +140,18 @@ const topicsHeading = isMysql ? '学习章节' : isRedis ? '知识专题' : isPr
               );
             })}
           </ul>
+        </section>
+      )}
+
+      {solutions && (
+        <section class="directory-section" aria-labelledby="solutions-heading">
+          <div class="directory-section-heading"><h2 id="solutions-heading">企业级解决方案</h2><span>方案与选型</span></div>
+          <ul class="topic-cards"><li class="topic-card">
+            <div class="topic-card-top"><span class:list={['topic-state', { 'has-articles': solutions.articleCount > 0 }]}>{solutions.articleCount > 0 ? `${solutions.articleCount} 篇文章` : '待补充'}</span></div>
+            <h3><a href={href(solutions.path)}>{solutions.title} <Icon name="diagonal" size={17} /></a></h3>
+            <p>{solutions.description}</p>
+            {solutions.articlePaths.length > 0 && <ul class="topic-card-articles">{solutions.articlePaths.map((entry) => <li><a href={href(entry)}>{articlesByPath.get(entry)!.title}</a></li>)}</ul>}
+          </li></ul>
         </section>
       )}
 

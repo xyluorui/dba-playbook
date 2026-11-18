@@ -4,7 +4,7 @@ MySQL 体系化知识。目录按「一条 SQL 的旅程」组织成 12 章，�
 
 > 学习地图与进度见 [overview.html](overview.html)。
 
-## 章节
+## 基础原理与核心机制
 
 | 章 | 目录 | 主题 | 状态 |
 |------|------|------|------|
@@ -21,11 +21,16 @@ MySQL 体系化知识。目录按「一条 SQL 的旅程」组织成 12 章，�
 | 10 | [10-ops/](10-ops/) | 运维与管理：部署、备份、监控、安全、升级 | 待撰写 |
 | 11 | [11-algorithms/](11-algorithms/) | 核心算法索引 | 待撰写 |
 
+## 企业级解决方案
+
+从生产需求出发，梳理高可用、接入和托管服务等方案及选型权衡，见 [企业级解决方案](solutions/)。操作步骤和真实事件分别放在 `runbooks/` 和 `cases/`。
+
 ## 文档总索引
 
 | 文档 | 说明 | 更新时间 |
 |------|------|----------|
 | [overview.html](overview.html) | 知识总览与章节进度 | 2026-11-03 |
+| [solutions/overview.html](solutions/overview.html) | 企业级方案入口与选型维度 | 2026-11-18 |
 | [00-overview/mysql-layered-architecture.html](00-overview/mysql-layered-architecture.html) | 分层架构、各层职责、Server 层与引擎层分界、SELECT / UPDATE 的执行旅程（适用 8.0.x） | 2026-11-03 |
 | [01-sql-layer/sql-execution-and-explain.html](01-sql-layer/sql-execution-and-explain.html) | 优化器原理与 EXPLAIN 详解、ICP / MRR / Hash Join / Filesort / 临时表（适用 8.0.x） | 2026-11-03 |
 
