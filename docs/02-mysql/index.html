@@ -157,11 +157,11 @@ a:hover { text-decoration: underline; }
 <blockquote>
 <p>学习地图与进度见 <a href="overview.html">overview.html</a>。</p>
 </blockquote>
-<h2>章节</h2>
+<h2>基础原理与核心机制</h2>
 <div class="table-wrap"><table>
 <thead><tr><th>章</th><th>目录</th><th>主题</th><th>状态</th></tr></thead>
 <tbody><tr><td>00</td><td><a href="00-overview/index.html">00-overview/</a></td><td>总览：分层架构与一条 SQL 的旅程</td><td>已成文</td></tr>
-<tr><td>01</td><td><a href="01-sql-layer/index.html">01-sql-layer/</a></td><td>SQL 层：解析、优化器、执行器、执行计划</td><td>已成文</td></tr>
+<tr><td>01</td><td><a href="01-sql-layer/index.html">01-sql-layer/</a></td><td>Server 层（连接管理与 SQL 处理）</td><td>已成文</td></tr>
 <tr><td>02</td><td><a href="02-innodb/index.html">02-innodb/</a></td><td>InnoDB 架构：内存、磁盘、后台线程</td><td>待撰写</td></tr>
 <tr><td>03</td><td><a href="03-index/index.html">03-index/</a></td><td>索引：B+ Tree 与索引设计</td><td>待撰写</td></tr>
 <tr><td>04</td><td><a href="04-transaction-mvcc/index.html">04-transaction-mvcc/</a></td><td>事务与 MVCC</td><td>待撰写</td></tr>
@@ -173,10 +173,13 @@ a:hover { text-decoration: underline; }
 <tr><td>10</td><td><a href="10-ops/index.html">10-ops/</a></td><td>运维与管理：部署、备份、监控、安全、升级</td><td>待撰写</td></tr>
 <tr><td>11</td><td><a href="11-algorithms/index.html">11-algorithms/</a></td><td>核心算法索引</td><td>待撰写</td></tr></tbody>
 </table></div>
+<h2>企业级解决方案</h2>
+<p>从生产需求出发，梳理高可用、接入和托管服务等方案及选型权衡，见 <a href="solutions/index.html">企业级解决方案</a>。操作步骤和真实事件分别放在 <code>runbooks/</code> 和 <code>cases/</code>。</p>
 <h2>文档总索引</h2>
 <div class="table-wrap"><table>
 <thead><tr><th>文档</th><th>说明</th><th>更新时间</th></tr></thead>
 <tbody><tr><td><a href="overview.html">overview.html</a></td><td>知识总览与章节进度</td><td>2026-11-03</td></tr>
+<tr><td><a href="solutions/overview.html">solutions/overview.html</a></td><td>企业级方案入口与选型维度</td><td>2026-11-18</td></tr>
 <tr><td><a href="00-overview/mysql-layered-architecture.html">00-overview/mysql-layered-architecture.html</a></td><td>分层架构、各层职责、Server 层与引擎层分界、SELECT / UPDATE 的执行旅程（适用 8.0.x）</td><td>2026-11-03</td></tr>
 <tr><td><a href="01-sql-layer/sql-execution-and-explain.html">01-sql-layer/sql-execution-and-explain.html</a></td><td>优化器原理与 EXPLAIN 详解、ICP / MRR / Hash Join / Filesort / 临时表（适用 8.0.x）</td><td>2026-11-03</td></tr></tbody>
 </table></div>

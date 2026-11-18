@@ -9,44 +9,40 @@ on:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 concurrency:
-  group: pages
+  group: ${{ github.event_name == 'pull_request' && github.ref || 'pages' }}
   cancel-in-progress: false
 
 jobs:
-  # PR 与 push 都跑校验：链接/元信息/生成物是否同步（与本地 --check 同款）
   check:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          cache: npm
       - uses: actions/setup-python@v5
         with:
           python-version: "3.x"
-      - name: 校验站点（链接、元信息、生成物同步）
+      - name: 校验仓库内的离线阅读版
         run: python scripts/site/build.py --check
-
-  build:
-    if: github.event_name != 'pull_request'
-    needs: check
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - run: npm ci
+      - name: 构建 Astro 和搜索索引并校验发布文件
+        run: npm run check
+      - uses: actions/upload-pages-artifact@v4
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
         with:
-          python-version: "3.x"
-      - name: 组装发布目录
-        run: python scripts/site/build.py --stage _site
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: _site
+          path: dist
 
   deploy:
-    if: github.event_name != 'pull_request'
-    needs: build
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    needs: check
     runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}

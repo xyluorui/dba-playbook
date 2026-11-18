@@ -3,138 +3,163 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>交互实验室 · DBA Playbook</title>
-<meta name="description" content="DBA Playbook 交互实验室：把 MySQL 机制做成可单步观察的交互实验">
+<title>一条 SELECT 的旅程 · DBA Playbook</title>
+<meta name="description" content="沿着一条 SELECT 观察 MySQL 8.0 从连接、执行计划到返回结果的过程。">
 <script>
-  // 主题预置，避免闪烁
   try {
-    if (localStorage.getItem('lab-theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
-  } catch (e) {}
+    const theme = localStorage.getItem('dba-playbook-theme');
+    if (theme === 'light' || theme === 'dark') document.documentElement.dataset.theme = theme;
+  } catch {}
 </script>
+<link rel="stylesheet" href="../../assets/site/tokens.css">
 <link rel="stylesheet" href="css/app.css">
 </head>
 <body>
-
-  <!-- ── 顶栏 ── -->
+  <a class="skip-link" href="#lab">跳到实验</a>
   <header class="topbar">
-    <div class="brand">
-      <div class="brand-mark">
-        <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round">
-          <ellipse cx="12" cy="5.5" rx="7.5" ry="3"></ellipse>
-          <path d="M4.5 5.5v6c0 1.66 3.36 3 7.5 3s7.5-1.34 7.5-3v-6"></path>
-          <path d="M4.5 11.5v6c0 1.66 3.36 3 7.5 3s7.5-1.34 7.5-3v-6"></path>
+    <div class="topbar-inner">
+      <a class="brand" href="../../index.html"><span class="brand-mark" aria-hidden="true">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20 6c0 2.2-3.6 4-8 4S4 8.2 4 6m16 0c0-2.2-3.6-4-8-4S4 3.8 4 6m16 0v12c0 2.2-3.6 4-8 4s-8-1.8-8-4V6m16 6c0 2.2-3.6 4-8 4s-8-1.8-8-4"/>
         </svg>
-      </div>
-      <div class="brand-text">
-        <b>DBA PLAYBOOK</b>
-        <span>交互实验室 · INTERACTIVE LABS</span>
-      </div>
-    </div>
-
-    <div class="now-learning">
-      <span class="eyebrow">正在学习</span>
-      <div class="now-title" id="hdr-title">—</div>
-      <div class="step-dots" id="hdr-steps"></div>
-    </div>
-
-    <div class="hdr-right">
-      <div class="progress">
-        <div class="pct" id="hdr-pct">0%</div>
-        <div class="bar"><i id="hdr-bar"></i></div>
-        <div class="pcount" id="hdr-count">已完成 0 / 6 步</div>
-      </div>
-      <button class="icon-btn" id="theme-toggle" title="切换明暗主题">
-        <svg class="theme-ico moon" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-          <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"></path>
-        </svg>
-        <svg class="theme-ico sun" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-          <circle cx="12" cy="12" r="4"></circle>
-          <path d="M12 2v2m0 16v2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M2 12h2m16 0h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path>
-        </svg>
-      </button>
-      <a class="icon-btn link" href="../demo-sql-journey.html" title="返回知识库">↩ 知识库</a>
+      </span>DBA Playbook</a>
+      <nav class="site-nav" aria-label="站点导航">
+        <a href="../../index.html">首页</a>
+        <a href="../../docs/02-mysql/index.html">MySQL</a>
+        <a href="../../docs/04-redis/index.html">Redis</a>
+        <a href="../index.html" aria-current="page">实验室</a>
+        <a href="../../cases/index.html">案例</a>
+      </nav>
+      <button class="button theme-toggle" id="theme-toggle" type="button" hidden>浅色</button>
     </div>
   </header>
 
-  <!-- ── 工作区 ── -->
-  <div class="workspace">
+  <main class="lab" id="lab">
+    <noscript>
+      <h1>一条 SELECT 的旅程</h1>
+      <p>交互演示需要 JavaScript。可直接阅读 <a href="../demo-sql-journey.html#sec-4">六步静态说明</a>。</p>
+    </noscript>
 
-    <!-- 左：课程目录 -->
-    <aside class="panel catalog">
-      <div class="panel-head">
-        <h2>课程目录</h2>
-        <span class="hint">P0 · 逐步上线</span>
+    <div id="lab-player" hidden>
+      <div class="lab-links">
+        <a href="../index.html">实验室</a>
+        <span aria-hidden="true">/</span>
+        <span id="lab-category">基础</span>
+        <a class="back-link" id="back-to-reading" href="../demo-sql-journey.html">← 返回静态说明</a>
       </div>
-      <div class="cat-tabs" id="cat-tabs"></div>
-      <div class="cat-list" id="cat-list"></div>
-    </aside>
 
-    <!-- 中：画面 -->
-    <main class="stage">
-      <div class="stage-head">
-        <div class="view-tabs">
-          <button data-view="topology" class="on">网络</button>
-          <button data-view="sequence">时序</button>
+      <section class="lab-intro" aria-labelledby="lab-title">
+        <div>
+          <div class="lab-meta">
+            <span class="eyebrow">交互实验</span>
+            <span class="badge" id="lab-version"></span>
+            <span class="badge" id="lab-engine"></span>
+          </div>
+          <h1 id="lab-title"></h1>
+          <p class="lab-question" id="lab-question"></p>
         </div>
-        <div class="stage-hint" id="stage-hint">点「单步」开始</div>
-      </div>
-      <div class="canvas">
-        <svg id="canvas-svg" xmlns="http://www.w3.org/2000/svg"></svg>
-      </div>
-      <div class="inspector hidden" id="inspector"></div>
-    </main>
-
-    <!-- 右：实验概览 -->
-    <aside class="panel info">
-      <div class="panel-head">
-        <h2>实验概览</h2>
-      </div>
-      <div class="info-scroll">
-        <div class="info-title-row">
-          <h3 id="info-title">—</h3>
-          <span class="status-badge" id="info-status">学习中</span>
+        <div class="query-card">
+          <div><span class="eyebrow" id="lab-input-label"></span><span>教学数据</span></div>
+          <pre><code id="lab-input"></code></pre>
         </div>
-        <p class="info-desc" id="info-desc"></p>
-        <div class="meta-table" id="info-meta"></div>
-        <div class="assump">
-          <b>边界与假设</b>
-          <ul id="info-assump"></ul>
-        </div>
-        <div class="challenge" id="info-challenge"></div>
-      </div>
-    </aside>
+      </section>
 
-    <!-- 下：事件流 -->
-    <section class="events">
-      <div class="events-head">
-        <h2>事件流</h2>
-        <div class="legend" id="ev-legend"></div>
-        <div class="controls">
-          <button class="speed" id="btn-speed" title="播放速度">1×</button>
-          <button class="btn btn-round" id="btn-prev" title="上一步（←）">‹</button>
-          <button class="btn btn-round" id="btn-next" title="下一步（→）">›</button>
-          <button class="btn btn-primary" id="btn-play">▶ 播放</button>
-          <button class="btn" id="btn-step">单步</button>
-          <button class="btn" id="btn-reset">重置</button>
-        </div>
-      </div>
-      <div class="ev-table-wrap">
-        <table class="ev-table">
-          <thead>
-            <tr><th>序号</th><th>时间</th><th>层次</th><th>对象</th><th>动作</th><th>证据</th></tr>
-          </thead>
-          <tbody id="ev-body"></tbody>
-        </table>
-      </div>
-      <div class="ev-note">
-        <span class="sample">示例</span>
-        示例值：时间与报文为教学示意，每次真实执行都不同 ··
-        教学中无法展示的细节：权限校验、网络传输、加密数据
-      </div>
-    </section>
+      <div class="experiment">
+        <section class="panel stage" aria-labelledby="stage-title">
+          <div class="stage-head">
+            <h2 id="stage-title">执行路径</h2>
+            <div class="view-tabs" role="group" aria-label="图示视图">
+              <button type="button" data-view="topology" aria-pressed="true">拓扑</button>
+              <button type="button" data-view="sequence" aria-pressed="false">时序</button>
+            </div>
+          </div>
 
-  </div>
+          <div class="controls" role="group" aria-label="播放控制">
+            <button class="button" id="btn-prev" type="button" aria-label="上一步（左箭头）" title="上一步（←）">上一步</button>
+            <button class="button primary" id="btn-next" type="button" title="下一步（→）">开始实验</button>
+            <button class="button" id="btn-play" type="button" title="播放或暂停（空格）">自动播放</button>
+            <button class="button" id="btn-speed" type="button" aria-label="播放速度 1 倍，点击切换">1×</button>
+            <button class="button subtle" id="btn-reset" type="button">重置</button>
+          </div>
 
+          <div class="canvas" id="canvas" data-view="topology">
+            <svg id="canvas-svg" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="diagram-title"></svg>
+          </div>
+
+          <div class="stage-foot">
+            <ol id="step-links" class="step-links" aria-label="实验步骤"></ol>
+            <div class="diagram-note">
+              <span id="diagram-caption">高亮显示当前步骤</span>
+              <span id="diagram-scroll-hint" hidden>示例时间 · 可横向滚动</span>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel current-step" aria-labelledby="step-title">
+          <div class="current-label">
+            <span class="eyebrow">当前步骤</span>
+            <span id="step-counter"></span>
+          </div>
+          <div id="step-description" aria-live="polite" aria-atomic="true">
+            <h2 id="step-title">准备开始</h2>
+            <p id="step-narration">逐步观察高亮组件和可核对的证据。</p>
+          </div>
+          <section class="evidence" id="step-evidence" aria-labelledby="evidence-title" hidden>
+            <h3 id="evidence-title">怎么核对</h3>
+            <p id="step-check"></p>
+            <pre id="step-command" hidden><code></code></pre>
+            <div class="step-example" id="step-example" hidden>
+              <h4><span id="example-title"></span><span class="badge">示例</span></h4>
+              <pre><code id="example-output"></code></pre>
+            </div>
+            <a class="source-link" id="step-source" href="#" target="_blank" rel="noopener noreferrer" hidden>官方文档 ↗</a>
+          </section>
+
+          <details class="inspector" id="inspector" hidden>
+            <summary>查看步骤检查器</summary>
+            <div class="inspector-body" id="inspector-body"></div>
+          </details>
+        </section>
+      </div>
+
+      <div class="lab-details">
+        <details class="panel disclosure" id="event-flow">
+          <summary><span>完整事件流</span><span class="summary-note">查看每一步的对象、动作和证据</span></summary>
+          <div class="event-table" tabindex="0" role="region" aria-label="事件流表格">
+            <table>
+              <thead><tr><th scope="col">步骤</th><th scope="col">示例时间</th><th scope="col">层次</th><th scope="col">对象</th><th scope="col">动作</th><th scope="col">证据</th></tr></thead>
+              <tbody id="event-rows"></tbody>
+            </table>
+          </div>
+        </details>
+
+        <details class="panel disclosure">
+          <summary><span>适用范围和参考资料</span><span class="summary-note">版本、实验假设及关联知识</span></summary>
+          <div class="disclosure-body">
+            <ul id="lab-assumptions"></ul>
+            <ul id="lab-references" class="reference-list"></ul>
+            <p><a href="../demo-sql-journey.html#sec-4">阅读静态步骤 →</a></p>
+          </div>
+        </details>
+
+        <details class="panel disclosure" id="challenge">
+          <summary><span>试着预测</span><span class="summary-note">把这个机制用到下一个场景</span></summary>
+          <div class="disclosure-body">
+            <p id="challenge-prompt"></p>
+            <details><summary>看提示答案</summary><p id="challenge-answer"></p></details>
+          </div>
+        </details>
+
+        <details class="panel disclosure">
+          <summary><span>实验目录</span></summary>
+          <div class="disclosure-body">
+            <div class="catalog-tabs" id="catalog-tabs" role="group" aria-label="筛选实验"></div>
+            <div class="catalog-list" id="catalog-list"></div>
+          </div>
+        </details>
+      </div>
+    </div>
+  </main>
   <script src="scenes/sql-journey-select.js"></script>
   <script src="js/topology.js"></script>
   <script src="js/sequence.js"></script>

@@ -1,0 +1,25 @@
+{
+  "name": "dba-playbook",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build && pagefind --site dist",
+    "preview": "astro preview",
+    "check": "astro check && npm run build && node src/lib/check-build.mjs"
+  },
+  "dependencies": {
+    "astro": "^7.4.5",
+    "cheerio": "^1.2.0",
+    "marked": "^18.0.0",
+    "pagefind": "^1.6.0"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.12",
+    "@types/node": "^24.19.2",
+    "typescript": "~5.9.3"
+  }
+}

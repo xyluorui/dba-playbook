@@ -153,29 +153,30 @@ a:hover { text-decoration: underline; }
         <nav class="crumb"><a href="../../index.html">首页</a> › <a href="../index.html">scripts</a> › <span>site</span></nav>
     <article class="content">
     <h1>站点工具</h1>
-<p>把本仓库构建成可浏览的静态站点：导航、全文搜索、Mermaid 渲染、一键本地预览、GitHub Pages 发布。</p>
-<blockquote>
-<p>内容文档全部以 <code>.html</code> 存放（规范类文档如 <code>AGENTS.md</code>、<code>README.md</code>、<code>CONTRIBUTING.md</code> 保留 Markdown）。 本目录是站点工具本身，不进站点导航。</p>
-</blockquote>
+<p>发布站点由 <code>src/</code> 中的 Astro 页面和布局生成，Pagefind 从构建后的页面建立全文搜索索引。内容源是一篇一个 <code>.html</code> 的独立页面，目录 README 继续作为内容索引。本目录的 Python 工具用于新建页面、预渲染图和维护仓库内的离线阅读版。</p>
+<h2>发布版预览与校验</h2>
+<p>使用 Node.js 24，在仓库根目录运行以下命令。</p>
+<pre><code class="language-sh">npm ci           # 首次安装依赖
+npm run dev      # Astro 本地开发预览
+npm run check    # 构建 dist/ 和 Pagefind 索引，并校验发布文件
+npm run preview  # 预览 dist/，可验证全文搜索</code></pre>
+<p>在命令输出的本地地址下打开 <code>/dba-playbook/</code>。使用 <code>npm run dev -- stop</code> 可停止开发服务。发布校验覆盖旧 HTML 路径、正文锚点、相对链接和发布文件范围。新增知识页后重新构建，即可在对应专题和全文搜索中找到它。</p>
 <h2>文件清单</h2>
 <div class="table-wrap"><table>
 <thead><tr><th>文件</th><th>用途</th></tr></thead>
-<tbody><tr><td><code>build.py</code></td><td>核心生成器：导航 <code>nav.js</code>、搜索索引 <code>search-index.js</code>、各目录 <code>index.html</code>、站点首页</td></tr>
-<tr><td><code>serve.ps1</code></td><td>本地一键预览：构建 + 起服务 + 自动打开浏览器</td></tr>
+<tbody><tr><td><code>build.py</code></td><td>离线阅读版生成器，维护仓库内的导航 <code>nav.js</code>、搜索索引 <code>search-index.js</code>、目录页和首页</td></tr>
+<tr><td><code>serve.ps1</code></td><td>Windows 下的离线阅读版预览，构建后启动本地服务并打开浏览器</td></tr>
 <tr><td><code>new-doc.py</code></td><td>从模板创建新内容页（替换 <code>{{ROOT}}</code> / <code>{{TITLE}}</code> 等占位符）</td></tr>
 <tr><td><code>render-diagrams.py</code></td><td>Mermaid 图预渲染为内嵌 SVG（静态查看器可显示；需 Node.js）</td></tr>
 <tr><td><code>sync-shell.py</code></td><td>把外壳、静态主题、页头（徽章+页内目录）、代码高亮同步到所有手写页与模板；<code>--check</code> 只检查</td></tr>
 <tr><td><code>theme.css</code></td><td><strong>静态阅读主题</strong>源文件（正文/表格/代码/徽章/卡片），内嵌进每个页面；浏览器与 Obsidian 共用</td></tr>
 <tr><td><code>highlight.js</code></td><td>构建期代码高亮（Node，复用 <code>assets/site/highlight.min.js</code>），由 sitekit 调用</td></tr>
 <tr><td><code>md2html.py</code></td><td>Markdown → 内容页迁移（一次性；导入外部笔记可用）</td></tr>
-<tr><td><code>sitekit.py</code></td><td>公共库：Markdown 子集渲染、<strong>页面外壳唯一来源</strong>（<code>SHELL_TOP</code>/<code>SHELL_BOTTOM</code>/兜底样式）、链接改写（被上面几个引用）</td></tr>
+<tr><td><code>sitekit.py</code></td><td>Python 工具的公共库，负责离线页面外壳、Markdown 子集渲染和链接改写</td></tr>
 <tr><td><code>page-template.html</code></td><td>通用内容页骨架（<code>new-doc.py --type doc</code> 的模板）</td></tr></tbody>
 </table></div>
-<h2>日常用法</h2>
-<pre><code class="language-powershell"># 本地预览（浏览器打开 http://127.0.0.1:8600）
-powershell -File scripts/site/serve.ps1
-
-# 新建文档（案例自动加日期前缀）
+<h2>新建内容与离线生成</h2>
+<pre><code class="language-sh"># 新建文档（案例自动加日期前缀）
 python scripts/site/new-doc.py --type case --dir cases/02-performance --slug replica-delay --title "主从延迟导致查询超时" --database MySQL
 python scripts/site/new-doc.py --type doc --dir docs/02-mysql/02-innodb --slug buffer-pool --title "Buffer Pool 与 LRU"
 
@@ -185,23 +186,23 @@ python scripts/site/render-diagrams.py
 # 改了页面外壳（sitekit.py 的 SHELL_*/兜底样式）后：同步到手写页与模板
 python scripts/site/sync-shell.py
 
-# 内容有增删改后，刷新生成物（导航/搜索索引/目录页）
+# 内容有增删改后，刷新仓库内的离线导航、搜索索引和目录页
 python scripts/site/build.py
 
-# 提交前校验（CI 同款）：生成物是否最新、链接、元信息
+# 提交前校验离线生成物、链接和元信息
 python scripts/site/build.py --check</code></pre>
-<p>工作流：<strong>新建/修改内容 →（有图则）<code>render-diagrams.py</code> → <code>build.py</code> → 更新所在目录 <code>README.md</code> 索引 → 提交</strong>（生成物一并提交）。</p>
-<h2>生成物（勿手改，均带 AUTO-GENERATED 标记）</h2>
+<p>工作流为新建或修改内容，更新目录 <code>README.md</code> 索引，按需运行 <code>render-diagrams.py</code>，再运行 <code>build.py</code> 与两套校验。离线生成物随内容提交。</p>
+<h2>离线生成物</h2>
 <ul>
 <li><code>assets/site/nav.js</code>、<code>assets/site/search-index.js</code></li>
 <li>站点根 <code>index.html</code>、各内容目录 <code>index.html</code>（由该目录 <code>README.md</code> 渲染 + 自动补漏）</li>
 </ul>
-<p>生成是确定性的：内容没变时重复运行结果一致；<code>--check</code> 会对比内容是否过期。</p>
+<p>这些文件带有 <code>AUTO-GENERATED</code> 标记，由 Python 工具生成。<code>--check</code> 会比较文件是否同步。Astro 的发布产物单独输出到 <code>dist/</code>。</p>
 <h2>HTML 内容页规范</h2>
 <ul>
 <li><strong>页面外壳由标记块托管</strong>：手写页里 <code>fallback-style</code>、<code>shell:top</code>、<code>shell:bottom</code>、<code>page-head</code> 四段标记块是 <code>sync-shell.py</code> 同步的区域，<strong>不要手改块内内容</strong>； 正文放在 <code>&lt;article class="content"&gt;…&lt;/article&gt;</code> 里（两段标记之间），不要删标记</li>
 <li>命名：英文小写 + 短横线；案例 <code>YYYY-MM-DD-&lt;slug&gt;.html</code>；中文标题写在 <code>&lt;h1&gt;</code></li>
-<li>元信息块：<code>&lt;head&gt;</code> 里的 <code>&lt;meta name="..." content="..."&gt;</code>，必填 <code>database</code>、<code>status</code>， 建议 <code>category</code>、<code>tags</code>、<code>date</code>（案例另有 <code>severity</code>、<code>source</code>）；徽章由 <code>ui.js</code> 自动渲染</li>
+<li>元信息块：<code>&lt;head&gt;</code> 里的 <code>&lt;meta name="..." content="..."&gt;</code>，必填 <code>database</code>、<code>status</code>， 建议 <code>category</code>、<code>tags</code>、<code>date</code>（案例另有 <code>severity</code>、<code>source</code>）。发布版与离线版用这些字段渲染徽章</li>
 <li><strong>Mermaid 图</strong>：先写 <code>&lt;pre class="mermaid"&gt;…&lt;/pre&gt;</code>（浏览器即时渲染）， 定稿后 <code>python scripts/site/render-diagrams.py</code> 预渲染为<strong>内嵌 SVG</strong>（源码保留在 <code>&lt;!-- mermaid --&gt;</code> 注释，改图后重跑）； 代码块：<code>&lt;pre&gt;&lt;code class="language-sql"&gt;…&lt;/code&gt;&lt;/pre&gt;</code></li>
 <li>前端依赖按需加载：<code>ui.js</code> 仅在页面有未预渲染的 <code>pre.mermaid</code> 时才加载 <code>mermaid.min.js</code>、有未预渲染的 <code>code.language-xxx</code> 时才加载 <code>highlight.min.js</code></li>
 <li>代码块里的文本<strong>不要带页面缩进</strong>（<code>&lt;pre&gt;</code> 内容顶格写），否则渲染出多余前导空格</li>
@@ -227,10 +228,10 @@ python scripts/site/build.py --check</code></pre>
 <tr><td>目录 <code>xxx/</code></td><td><code>xxx/index.html</code></td><td></td></tr>
 <tr><td>外链 / 锚点</td><td>不变</td><td></td></tr></tbody>
 </table></div>
-<h2>发布（GitHub Actions → GitHub Pages）</h2>
-<p><code>.github/workflows/pages.yml</code>：push 到 <code>main</code> 自动执行 <code>build.py --check</code>（链接/元信息/生成物与手写页外壳同步校验）→ <code>build.py --stage _site</code>（组装发布目录）→ 部署。 仓库 Settings → Pages 选 "GitHub Actions" 作为来源即可，本地与线上共用同一套构建逻辑。</p>
+<h2>GitHub Pages 发布</h2>
+<p>工作流会在 PR 和 <code>main</code> 上运行 <code>build.py --check</code> 检查离线版，并用 <code>npm run check</code> 构建与校验发布版。<code>main</code> 校验通过后，GitHub Actions 上传 <code>dist/</code> 并部署到 Pages。在仓库 Settings → Pages 中选择 GitHub Actions 作为发布来源。 <a href="https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages">GitHub Pages 工作流</a></p>
 <h2>依赖</h2>
-<p>仅 Python 3.9+ 标准库；前端资源（<code>mermaid.min.js</code>、<code>highlight.min.js</code>）已本地化到 <code>assets/site/</code>，离线可用。</p>
+<p>发布版使用 Node.js 24 和 <code>package-lock.json</code> 锁定的依赖。离线工具使用 Python 3.9+ 标准库，Mermaid 预渲染及构建期代码高亮还需要 Node.js。<code>mermaid.min.js</code> 和 <code>highlight.min.js</code> 存在 <code>assets/site/</code>，支持离线使用。</p>
     </article>
 <!-- shell:bottom:start（同步工具：scripts/site/sync-shell.py） -->
   </main>

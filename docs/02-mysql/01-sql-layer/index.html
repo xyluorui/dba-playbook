@@ -4,7 +4,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>01 · SQL 层：解析、优化器、执行器与执行计划 | DBA Playbook</title>
+<title>01 · Server 层 | DBA Playbook</title>
 <!-- fallback-style:start（同步工具：scripts/site/sync-shell.py；样式源：scripts/site/theme.css） -->
 <script>document.documentElement.className += " js";</script>
 <style>
@@ -152,10 +152,11 @@ a:hover { text-decoration: underline; }
 <!-- shell:top:end -->
         <nav class="crumb"><a href="../../../index.html">首页</a> › <a href="../../index.html">docs</a> › <a href="../index.html">02-mysql</a> › <span>01-sql-layer</span></nav>
     <article class="content">
-    <h1>01 · SQL 层：解析、优化器、执行器与执行计划</h1>
-<p>Server 层如何处理一条 SQL：从文本到执行计划，再到逐行取数。</p>
+    <h1>01 · Server 层</h1>
+<p>MySQL Server 层负责连接管理和 SQL 处理。本章沿着一条 SQL 讲解解析、预处理、优化和执行。</p>
 <h2>本章范围</h2>
 <ul>
+<li><a href="../00-overview/mysql-layered-architecture.html#sec-3">连接管理与认证</a>，见架构总览</li>
 <li>解析器：词法 / 语法分析、AST、<code>sql_mode</code> 与保留字</li>
 <li>预处理：名字解析、权限、语义检查、MDL</li>
 <li>优化器：逻辑改写、基于成本的物理优化、统计信息、选错索引的治理</li>

@@ -47,9 +47,10 @@
 - 新增/删除/改名文档后，更新所在目录 `README.md` 的索引表（文档 | 说明 | 更新时间），内容文档链接指向 `.html`
 - 新增板块时，更新根 `README.md` 知识地图
 - 含 Mermaid 图的文档：先写 `<pre class="mermaid">`，定稿后 `python scripts/site/render-diagrams.py` 预渲染为内嵌 SVG（Obsidian 等静态查看器也能显示）
-- 内容增删改后运行 `python scripts/site/build.py` 刷新站点生成物，与内容一并提交
-- 提交前可跑 `python scripts/site/build.py --check` 自动校验链接、元信息与生成物同步
-- 本地预览：`powershell -File scripts/site/serve.ps1`（或双击任意 `.html` 直接用浏览器看）
+- 内容增删改后运行 `python scripts/site/build.py` 刷新离线阅读版的生成物，与内容一并提交
+- Astro 从内容 HTML 与目录 README 生成导航和页面，Pagefind 在构建后索引发布版正文
+- 本地使用 Node.js 24。首次运行 `npm ci`，日常用 `npm run dev` 预览。运行 `npm run check` 构建和校验发布版，再用 `npm run preview` 验证搜索
+- `python scripts/site/build.py --check` 检查仓库内离线版。可双击内容 HTML 在浏览器中单独阅读
 
 ## 提交规范
 
@@ -73,3 +74,4 @@ chore: 更新索引
 - [ ] Runbook 有验证步骤和回滚方案
 - [ ] Mermaid 图已预渲染（含图文档）
 - [ ] `python scripts/site/build.py --check` 通过
+- [ ] `npm run check` 通过

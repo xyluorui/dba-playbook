@@ -374,6 +374,8 @@ def stage(stage_dir: str) -> None:
         abs_dst = os.path.join(target, rel) if rel else target
         os.makedirs(abs_dst, exist_ok=True)
         for name in sorted(os.listdir(abs_src)):
+            if not rel and name in {"dist", "src"}:
+                continue
             src = os.path.join(abs_src, name)
             r = rel_of(rel, name) if rel else name
             if os.path.isdir(src):

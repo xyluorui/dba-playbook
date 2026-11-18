@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Redis 核心概念与机制体系 | DBA Playbook</title>
+<!-- 元信息块（必填 database/status；等价于原 front matter，徽章由 ui.js 自动渲染） -->
+<meta name="database" content="Redis">
+<meta name="category" content="架构">
+<meta name="tags" content="架构, 内存, 持久化, 复制, 高可用, 集群">
+<meta name="date" content="2026-11-06">
+<meta name="status" content="draft">
+<!-- fallback-style:start（同步工具：scripts/site/sync-shell.py；样式源：scripts/site/theme.css） -->
+<script>document.documentElement.className += " js";</script>
+<style>
+/* 静态主题：外部 CSS/JS 不可用时（如 Obsidian HTML 插件）保证阅读版式 */
+:root {
+  --bg: #f6f7f9; --panel: #ffffff; --text: #1f2329; --muted: #646a73;
+  --accent: #2563eb; --accent-soft: #eaf0fe; --border: #e4e7ed;
+  --code-bg: #f3f5f8; --pre-bg: #1f2430; --pre-text: #dce1e8;
+  --warn: #b45309; --ok: #15803d; --shadow: 0 1px 3px rgba(15, 23, 42, .08);
+  color-scheme: light dark;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0f141a; --panel: #161d25; --text: #d7dde4; --muted: #8b949e;
+    --accent: #6ea8fe; --accent-soft: #1b2a41; --border: #2a3340;
+    --code-bg: #1c242e; --pre-bg: #10161d; --pre-text: #cdd7e1;
+    --warn: #f0b429; --ok: #4ade80; --shadow: none;
+  }
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--panel); color: var(--text);
+  font: 16px/1.75 -apple-system, "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+  overflow-wrap: break-word;
+}
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.site-header, .sidebar, .nav-toggle { display: none; }
+.skip-link { position: absolute; left: -999px; top: .5rem; z-index: 100; }
+.skip-link:focus { left: .5rem; padding: .35rem .8rem; border-radius: .4rem; background: var(--panel); border: 1px solid var(--accent); }
+.layout, main { display: block; }
+.content { max-width: 52rem; margin: 0 auto; padding: 1.6rem 1.5rem 3rem; }
+.crumb { font-size: .82rem; color: var(--muted); margin-bottom: .9rem; }
+.crumb span { color: var(--text); }
+.meta { display: flex; flex-wrap: wrap; gap: .42rem; margin: .35rem 0 1.2rem; }
+.badge {
+  display: inline-flex; align-items: center; font-size: .74rem; line-height: 1.6;
+  padding: .05rem .6rem; border-radius: 1rem; border: 1px solid var(--border);
+  color: var(--muted); background: var(--panel);
+}
+.badge.db { color: var(--accent); border-color: var(--accent); background: var(--accent-soft); font-weight: 600; }
+.badge.cat { color: var(--warn); border-color: currentColor; }
+.badge.status-draft { color: var(--warn); border-color: currentColor; font-weight: 600; }
+.badge.status-stable, .badge.status-done { color: var(--ok); border-color: currentColor; }
+.chip { display: inline-block; font-size: .72rem; padding: 0 .5rem; margin-left: .45rem; border-radius: 1rem; background: var(--accent-soft); color: var(--accent); }
+.content .toc-inline { margin: 0 0 1.6rem; border: 1px solid var(--border); border-radius: .6rem; background: var(--bg); font-size: .86rem; }
+.content .toc-inline summary { cursor: pointer; padding: .45rem .95rem; font-weight: 600; }
+.content .toc-inline ul { list-style: none; margin: 0; padding: .1rem .95rem .7rem; columns: 2 16rem; column-gap: 1.6rem; }
+.content .toc-inline li { margin: 0; padding: .08rem 0; line-height: 1.5; break-inside: avoid; }
+.content .toc-inline li.h3 { padding-left: 1rem; font-size: .82rem; }
+.content .toc-inline a { color: var(--muted); }
+.content .toc-inline a:hover { color: var(--accent); }
+.content h1 { font-size: 1.95rem; line-height: 1.4; margin: .2rem 0 .7rem; letter-spacing: .01em; }
+.content h2 { font-size: 1.4rem; margin: 2.5rem 0 1rem; padding-bottom: .35rem; border-bottom: 2px solid var(--border); }
+.content h3 { font-size: 1.14rem; margin: 1.9rem 0 .7rem; padding-left: .65rem; border-left: 3px solid var(--accent); line-height: 1.5; }
+.content h4 { font-size: 1rem; margin: 1.4rem 0 .55rem; }
+.content p { margin: .8rem 0; }
+.content ul, .content ol { padding-left: 1.6rem; margin: .8rem 0; }
+.content li { margin: .3rem 0; }
+.content li::marker { color: var(--muted); }
+.content hr { border: 0; border-top: 1px solid var(--border); margin: 2.2rem 0; }
+.content strong { font-weight: 650; }
+.content blockquote {
+  margin: 1.2rem 0; padding: .75rem 1.2rem; border-left: 4px solid var(--accent);
+  background: var(--accent-soft); border-radius: 0 .6rem .6rem 0;
+}
+.content blockquote p { margin: .35rem 0; }
+.content blockquote p:first-child { margin-top: 0; }
+.content blockquote p:last-child { margin-bottom: 0; }
+.content code {
+  font-family: "JetBrains Mono", Consolas, Menlo, monospace; font-size: .85em;
+  background: var(--code-bg); border: 1px solid var(--border);
+  padding: .08em .38em; border-radius: .35rem; word-break: break-word;
+}
+.content pre {
+  background: var(--pre-bg); color: var(--pre-text); border-radius: .7rem;
+  padding: 1rem 1.25rem; overflow-x: auto; font-size: .85rem; line-height: 1.65; margin: 1.1rem 0;
+  tab-size: 4;
+}
+.content pre code { background: none; border: 0; padding: 0; color: inherit; font-size: 1em; word-break: normal; }
+.content pre.mermaid { background: #fff; color: #333; text-align: center; }
+.content .diagram {
+  overflow-x: auto; margin: 1.3rem 0; padding: .9rem; text-align: center;
+  background: #fff; border: 1px solid var(--border); border-radius: .7rem;
+}
+.content .diagram svg { max-width: 100%; height: auto; }
+.table-wrap { overflow-x: auto; margin: 1.2rem 0; border: 1px solid var(--border); border-radius: .7rem; }
+.content table { border-collapse: collapse; width: 100%; font-size: .9rem; }
+.content th, .content td { padding: .5rem .8rem; text-align: left; vertical-align: top; border-bottom: 1px solid var(--border); }
+.content th { background: var(--code-bg); font-weight: 650; white-space: nowrap; }
+.content tbody tr:nth-child(even) td { background: color-mix(in srgb, var(--code-bg) 55%, transparent); }
+.content tbody tr:last-child td { border-bottom: 0; }
+.content td code { white-space: nowrap; }
+.content img { max-width: 100%; border-radius: .5rem; }
+.hero { text-align: center; padding: 2.4rem 0 1rem; }
+.hero h1 { font-size: 2.35rem; margin: 0 0 .75rem; }
+.tagline { color: var(--muted); font-size: 1.05rem; margin: 0 auto; max-width: 42rem; }
+.hero-links { margin-top: 1.5rem; }
+.btn { display: inline-block; padding: .52rem 1.25rem; border-radius: .55rem; background: var(--accent); color: #fff; font-weight: 600; margin: 0 .35rem; }
+.btn:hover { text-decoration: none; filter: brightness(1.08); }
+.btn.ghost { background: var(--panel); color: var(--accent); border: 1px solid var(--accent); }
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 1rem; margin: 1.1rem 0 2rem; }
+.card { display: block; padding: 1.1rem 1.3rem; background: var(--panel); border: 1px solid var(--border); border-radius: .75rem; color: var(--text); box-shadow: var(--shadow); }
+.card:hover { text-decoration: none; border-color: var(--accent); }
+.card h3 { margin: 0 0 .45rem; font-size: 1.05rem; padding: 0; border: 0; }
+.card p { margin: 0; font-size: .85rem; color: var(--muted); }
+.recent { list-style: none; padding-left: 0; }
+.recent li { padding: .32rem 0; border-bottom: 1px dashed var(--border); }
+.recent .date { font-family: Consolas, monospace; font-size: .8rem; color: var(--muted); margin-right: .6rem; }
+.auto-list { padding-left: 1.2rem; }
+.site-footer { text-align: center; color: var(--muted); font-size: .8rem; padding: 1.4rem 1rem 2rem; border-top: 1px solid var(--border); }
+@media (max-width: 640px) {
+  .content { padding: 1.1rem 1rem 2.5rem; }
+  .content h1 { font-size: 1.55rem; }
+}
+@media print {
+  .toc-inline > summary { display: none; }
+  .content { max-width: none; padding: 0; }
+  .content pre { white-space: pre-wrap; }
+}
+.hljs-keyword, .hljs-selector-tag, .hljs-doctag { color: #c678dd; }
+.hljs-string, .hljs-attr, .hljs-regexp { color: #98c379; }
+.hljs-number, .hljs-literal, .hljs-symbol { color: #d19a66; }
+.hljs-comment, .hljs-quote { color: #7f8c98; font-style: italic; }
+.hljs-title, .hljs-function, .hljs-section { color: #61afef; }
+.hljs-built_in, .hljs-type { color: #e6c07b; }
+.hljs-variable, .hljs-template-variable, .hljs-name { color: #e06c75; }
+.hljs-meta { color: #56b6c2; }
+</style>
+<!-- fallback-style:end -->
+<link rel="stylesheet" href="../../assets/site/site.css">
+</head>
+<body data-root="../../">
+<!-- shell:top:start（同步工具：scripts/site/sync-shell.py） -->
+<a class="skip-link" href="#main">跳到正文</a>
+<header class="site-header">
+  <button class="nav-toggle" id="nav-toggle" type="button" aria-label="打开目录" aria-controls="sidebar" aria-expanded="false">☰</button>
+  <a class="brand" href="../../index.html">DBA Playbook</a>
+  <div class="search" id="search-box" role="search"></div>
+</header>
+<div class="layout">
+  <nav class="sidebar" id="sidebar" aria-label="站点目录"></nav>
+  <main id="main">
+<!-- shell:top:end -->
+    <article class="content">
+      <h1>Redis 核心概念与机制体系</h1>
+<!-- page-head:start（同步工具：scripts/site/sync-shell.py） -->
+<p class="meta"><span class="badge db">Redis</span><span class="badge cat">架构</span><span class="badge">架构</span><span class="badge">内存</span><span class="badge">持久化</span><span class="badge">复制</span><span class="badge">高可用</span><span class="badge">集群</span><span class="badge">2026-11-06</span><span class="badge status-draft">draft</span></p>
+<nav class="toc-inline" aria-label="本文目录"><details open><summary>本文目录（9 节）</summary>
+<ul>
+<li class="h2"><a href="#overview">1. 总览：一条写命令的旅程</a></li>
+<li class="h2"><a href="#data-model">2. 数据模型：按访问方式选类型</a></li>
+<li class="h2"><a href="#execution">3. 执行：事件循环、批量请求与原子性</a></li>
+<li class="h2"><a href="#memory">4. 内存：过期、淘汰和实际占用</a></li>
+<li class="h2"><a href="#persistence">5. 持久化：进程重启能恢复到哪里</a></li>
+<li class="h2"><a href="#availability">6. 复制、Sentinel 和 Cluster：节点故障后由谁服务</a></li>
+<li class="h2"><a href="#diagnosis">7. 排查：从现象找到对应机制</a></li>
+<li class="h2"><a href="#practice">8. 在测试实例观察 TTL 与事务</a></li>
+<li class="h2"><a href="#references">官方参考</a></li>
+</ul></details></nav>
+<!-- page-head:end -->
+      <p class="version">适用：Redis Open Source 7.2.x；单机、主从复制、Sentinel 和原生 Cluster。文中另行标注跨版本差异。</p>
+
+      <h2 id="overview">1. 总览：一条写命令的旅程</h2>
+      <p>把 Redis 理解成一台按命令操作内存数据结构的服务器。用 <code>SET demo:session active EX 60</code> 串起它的机制：客户端找到目标节点，主线程写入 String 并设定 60 秒有效期。此后，<strong>多久能读到、重启能否恢复、切主后能否读到</strong>，分别由内存中的 key 生命周期、持久化配置、复制与故障转移决定。对这条命令收到 <code>OK</code>，只能据此确认目标节点执行成功；磁盘与副本的进度需要另外判断。</p>
+      <figure style="margin-inline: 0">
+        <!-- mermaid
+flowchart TB
+    accTitle: Redis 写命令的旅程
+    accDescr: 客户端定位目标节点后，主线程执行写命令并修改内存。内存数据受过期和淘汰影响，另有持久化和复制两条路径。
+    A["客户端定位节点"] --&gt; B["主线程执行命令"]
+    B --&gt; C["内存 key：过期 / 淘汰"]
+    C --&gt; D["持久化：RDB / AOF"]
+    C --&gt; E["复制：主节点 / 副本"]
+-->
+<div class="diagram">
+<svg id="dg-c1163e25" width="100%" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" class="flowchart" style="max-width: 360px; background-color: transparent;" viewBox="4 4 360 358" role="graphics-document document" aria-roledescription="flowchart-v2" aria-describedby="chart-desc-dg-c1163e25" aria-labelledby="chart-title-dg-c1163e25"><title id="chart-title-dg-c1163e25">Redis 写命令的旅程</title><desc id="chart-desc-dg-c1163e25">客户端定位目标节点后，主线程执行写命令并修改内存。内存数据受过期和淘汰影响，另有持久化和复制两条路径。</desc><style>#dg-c1163e25{font-family:trebuchet ms,verdana,arial,sans-serif;font-size:14px;fill:#333;}@keyframes edge-animation-frame{from{stroke-dashoffset:0;}}@keyframes dash{to{stroke-dashoffset:0;}}#dg-c1163e25 .edge-animation-slow{stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 50s linear infinite;stroke-linecap:round;}#dg-c1163e25 .edge-animation-fast{stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 20s linear infinite;stroke-linecap:round;}#dg-c1163e25 .error-icon{fill:#552222;}#dg-c1163e25 .error-text{fill:#552222;stroke:#552222;}#dg-c1163e25 .edge-thickness-normal{stroke-width:1px;}#dg-c1163e25 .edge-thickness-thick{stroke-width:3.5px;}#dg-c1163e25 .edge-pattern-solid{stroke-dasharray:0;}#dg-c1163e25 .edge-thickness-invisible{stroke-width:0;fill:none;}#dg-c1163e25 .edge-pattern-dashed{stroke-dasharray:3;}#dg-c1163e25 .edge-pattern-dotted{stroke-dasharray:2;}#dg-c1163e25 .marker{fill:#333333;stroke:#333333;}#dg-c1163e25 .marker.cross{stroke:#333333;}#dg-c1163e25 svg{font-family:trebuchet ms,verdana,arial,sans-serif;font-size:14px;}#dg-c1163e25 p{margin:0;}#dg-c1163e25 .label{font-family:trebuchet ms,verdana,arial,sans-serif;color:#333;}#dg-c1163e25 .cluster-label text{fill:#333;}#dg-c1163e25 .cluster-label span{color:#333;}#dg-c1163e25 .cluster-label span p{background-color:transparent;}#dg-c1163e25 .label text,#dg-c1163e25 span{fill:#333;color:#333;}#dg-c1163e25 .node rect,#dg-c1163e25 .node circle,#dg-c1163e25 .node ellipse,#dg-c1163e25 .node polygon,#dg-c1163e25 .node path{fill:#ECECFF;stroke:#9370DB;stroke-width:1px;}#dg-c1163e25 .rough-node .label text,#dg-c1163e25 .node .label text,#dg-c1163e25 .image-shape .label,#dg-c1163e25 .icon-shape .label{text-anchor:middle;}#dg-c1163e25 .node .katex path{fill:#000;stroke:#000;stroke-width:1px;}#dg-c1163e25 .rough-node .label,#dg-c1163e25 .node .label,#dg-c1163e25 .image-shape .label,#dg-c1163e25 .icon-shape .label{text-align:center;}#dg-c1163e25 .node.clickable{cursor:pointer;}#dg-c1163e25 .root .anchor path{fill:#333333!important;stroke-width:0;stroke:#333333;}#dg-c1163e25 .arrowheadPath{fill:#333333;}#dg-c1163e25 .edgePaths .path{stroke:#333333;stroke-width:1px;}#dg-c1163e25 .flowchart-link{stroke:#333333;fill:none;}#dg-c1163e25 .edgeLabel{background-color:rgba(232,232,232, 0.8);text-align:center;}#dg-c1163e25 .edgeLabel p{background-color:rgba(232,232,232, 0.8);}#dg-c1163e25 .edgeLabel rect{opacity:0.5;background-color:rgba(232,232,232, 0.8);fill:rgba(232,232,232, 0.8);}#dg-c1163e25 .labelBkg{background-color:rgba(232, 232, 232, 0.5);}#dg-c1163e25 .cluster rect{fill:#ffffde;stroke:#aaaa33;stroke-width:1px;}#dg-c1163e25 .cluster text{fill:#333;}#dg-c1163e25 .cluster span{color:#333;}#dg-c1163e25 .node .collapsed-indicator{fill:#aaaa33;stroke:none;opacity:0.6;}#dg-c1163e25 .node .collapsed-separator{stroke:#aaaa33;stroke-width:0.75px;}#dg-c1163e25 div.mermaidTooltip{position:absolute;text-align:center;max-width:200px;padding:2px;font-family:trebuchet ms,verdana,arial,sans-serif;font-size:12px;background:hsl(80, 100%, 96.2745098039%);border:1px solid #aaaa33;border-radius:2px;pointer-events:none;z-index:100;}#dg-c1163e25 .flowchartTitleText{text-anchor:middle;font-size:18px;fill:#333;}#dg-c1163e25 rect.text{fill:none;stroke-width:0;}#dg-c1163e25 .icon-shape,#dg-c1163e25 .image-shape{background-color:rgba(232,232,232, 0.8);text-align:center;}#dg-c1163e25 .icon-shape p,#dg-c1163e25 .image-shape p{background-color:rgba(232,232,232, 0.8);padding:2px;}#dg-c1163e25 .icon-shape .label rect,#dg-c1163e25 .image-shape .label rect{opacity:0.5;background-color:rgba(232,232,232, 0.8);fill:rgba(232,232,232, 0.8);}#dg-c1163e25 .label-icon{display:inline-block;height:1em;overflow:visible;vertical-align:-0.125em;}#dg-c1163e25 .node .label-icon path{fill:currentColor;stroke:revert;stroke-width:revert;}#dg-c1163e25 .node .neo-node{stroke:#9370DB;}#dg-c1163e25 [data-look="neo"].node rect,#dg-c1163e25 [data-look="neo"].cluster rect,#dg-c1163e25 [data-look="neo"].node polygon{stroke:#9370DB;filter:drop-shadow(1px 2px 2px rgba(185, 185, 185, 1));}#dg-c1163e25 [data-look="neo"].swimlane.cluster rect{filter:none;}#dg-c1163e25 [data-look="neo"].node path{stroke:#9370DB;stroke-width:1px;}#dg-c1163e25 [data-look="neo"].node .outer-path{filter:drop-shadow(1px 2px 2px rgba(185, 185, 185, 1));}#dg-c1163e25 [data-look="neo"].node .neo-line path{stroke:#9370DB;filter:none;}#dg-c1163e25 [data-look="neo"].node circle{stroke:#9370DB;filter:drop-shadow(1px 2px 2px rgba(185, 185, 185, 1));}#dg-c1163e25 [data-look="neo"].node circle .state-start{fill:#000000;}#dg-c1163e25 [data-look="neo"].icon-shape .icon{fill:#9370DB;filter:drop-shadow(1px 2px 2px rgba(185, 185, 185, 1));}#dg-c1163e25 [data-look="neo"].icon-shape .icon-neo path{stroke:#9370DB;filter:drop-shadow(1px 2px 2px rgba(185, 185, 185, 1));}#dg-c1163e25 :root{--mermaid-font-family:"trebuchet ms",verdana,arial,sans-serif;}</style><g><marker id="dg-c1163e25_flowchart-v2-pointEnd" class="marker flowchart-v2" viewBox="0 0 10 10" refX="5" refY="5" markerUnits="userSpaceOnUse" markerWidth="8" markerHeight="8" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"/></marker><marker id="dg-c1163e25_flowchart-v2-pointStart" class="marker flowchart-v2" viewBox="0 0 10 10" refX="4.5" refY="5" markerUnits="userSpaceOnUse" markerWidth="8" markerHeight="8" orient="auto"><path d="M 0 5 L 10 10 L 10 0 z" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"/></marker><marker id="dg-c1163e25_flowchart-v2-pointEnd-margin" class="marker flowchart-v2" viewBox="0 0 11.5 14" refX="11.5" refY="7" markerUnits="userSpaceOnUse" markerWidth="10.5" markerHeight="14" orient="auto"><path d="M 0 0 L 11.5 7 L 0 14 z" class="arrowMarkerPath" style="stroke-width: 0; stroke-dasharray: 1, 0;"/></marker><marker id="dg-c1163e25_flowchart-v2-pointStart-margin" class="marker flowchart-v2" viewBox="0 0 11.5 14" refX="1" refY="7" markerUnits="userSpaceOnUse" markerWidth="11.5" markerHeight="14" orient="auto"><polygon points="0,7 11.5,14 11.5,0" class="arrowMarkerPath" style="stroke-width: 0; stroke-dasharray: 1, 0;"/></marker><marker id="dg-c1163e25_flowchart-v2-circleEnd" class="marker flowchart-v2" viewBox="0 0 10 10" refX="11" refY="5" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"/></marker><marker id="dg-c1163e25_flowchart-v2-circleStart" class="marker flowchart-v2" viewBox="0 0 10 10" refX="-1" refY="5" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"/></marker><marker id="dg-c1163e25_flowchart-v2-circleEnd-margin" class="marker flowchart-v2" viewBox="0 0 10 10" refY="5" refX="12.25" markerUnits="userSpaceOnUse" markerWidth="14" markerHeight="14" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 0; stroke-dasharray: 1, 0;"/></marker><marker id="dg-c1163e25_flowchart-v2-circleStart-margin" class="marker flowchart-v2" viewBox="0 0 10 10" refX="-2" refY="5" markerUnits="userSpaceOnUse" markerWidth="14" markerHeight="14" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 0; stroke-dasharray: 1, 0;"/></marker><marker id="dg-c1163e25_flowchart-v2-crossEnd" class="marker cross flowchart-v2" viewBox="0 0 11 11" refX="12" refY="5.2" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><path d="M 1,1 l 9,9 M 10,1 l -9,9" class="arrowMarkerPath" style="stroke-width: 2; stroke-dasharray: 1, 0;"/></marker><marker id="dg-c1163e25_flowchart-v2-crossStart" class="marker cross flowchart-v2" viewBox="0 0 11 11" refX="-1" refY="5.2" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><path d="M 1,1 l 9,9 M 10,1 l -9,9" class="arrowMarkerPath" style="stroke-width: 2; stroke-dasharray: 1, 0;"/></marker><marker id="dg-c1163e25_flowchart-v2-crossEnd-margin" class="marker cross flowchart-v2" viewBox="0 0 15 15" refX="17.7" refY="7.5" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto"><path d="M 1,1 L 14,14 M 1,14 L 14,1" class="arrowMarkerPath" style="stroke-width: 2.5;"/></marker><marker id="dg-c1163e25_flowchart-v2-crossStart-margin" class="marker cross flowchart-v2" viewBox="0 0 15 15" refX="-3.5" refY="7.5" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto"><path d="M 1,1 L 14,14 M 1,14 L 14,1" class="arrowMarkerPath" style="stroke-width: 2.5; stroke-dasharray: 1, 0;"/></marker><g class="root"><g class="clusters"/><g class="edges edgePaths"><path d="M184,57L184,93" id="dg-c1163e25-L_A_B_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style="stroke-dasharray: 0 0 32 4; stroke-dashoffset: 0;;" data-edge="true" data-et="edge" data-id="L_A_B_0" data-points="W3sieCI6MTg0LCJ5Ijo1N30seyJ4IjoxODQsInkiOjk3fV0=" data-look="neo" marker-end="url(#dg-c1163e25_flowchart-v2-pointEnd-margin)"/><path d="M184,142L184,178" id="dg-c1163e25-L_B_C_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style="stroke-dasharray: 0 0 32 4; stroke-dashoffset: 0;;" data-edge="true" data-et="edge" data-id="L_B_C_0" data-points="W3sieCI6MTg0LCJ5IjoxNDJ9LHsieCI6MTg0LCJ5IjoxODJ9XQ==" data-look="neo" marker-end="url(#dg-c1163e25_flowchart-v2-pointEnd-margin)"/><path d="M162,248L162,260.9289321881345Q162,268 154.92893218813452,268L95.07106781186548,268Q88,268 88,275.0710678118655L88,284" id="dg-c1163e25-L_C_D_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style="stroke-dasharray: 0 0 100.67169189453125 4; stroke-dashoffset: 0;;" data-edge="true" data-et="edge" data-id="L_C_D_0" data-points="W3sieCI6MTYyLCJ5IjoyNDh9LHsieCI6MTYyLCJ5IjoyNjh9LHsieCI6ODgsInkiOjI2OH0seyJ4Ijo4OCwieSI6Mjg4fV0=" data-look="neo" marker-end="url(#dg-c1163e25_flowchart-v2-pointEnd-margin)"/><path d="M206,248L206,260.9289321881345Q206,268 213.07106781186548,268L272.9289321881345,268Q280,268 280,275.0710678118655L280,284" id="dg-c1163e25-L_C_E_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style="stroke-dasharray: 0 0 100.67170715332031 4; stroke-dashoffset: 0;;" data-edge="true" data-et="edge" data-id="L_C_E_0" data-points="W3sieCI6MjA2LCJ5IjoyNDh9LHsieCI6MjA2LCJ5IjoyNjh9LHsieCI6MjgwLCJ5IjoyNjh9LHsieCI6MjgwLCJ5IjoyODh9XQ==" data-look="neo" marker-end="url(#dg-c1163e25_flowchart-v2-pointEnd-margin)"/></g><g class="edgeLabels"/><g class="nodes"><g class="node default" id="dg-c1163e25-flowchart-A-0" data-look="neo" transform="translate(184, 34.5)"><rect class="basic label-container" style="" x="-76" y="-22.5" width="152" height="45"/><g class="label" style="" transform="translate(-60, -10.5)"><rect/><foreignObject width="120" height="21"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table; white-space: nowrap; line-height: 1.5; max-width: 120px; text-align: center; width: 120px;"><span class="nodeLabel"><p>客户端定位节点</p></span></div></foreignObject></g></g><g class="node default" id="dg-c1163e25-flowchart-B-1" data-look="neo" transform="translate(184, 119.5)"><rect class="basic label-container" style="" x="-76" y="-22.5" width="152" height="45"/><g class="label" style="" transform="translate(-60, -10.5)"><rect/><foreignObject width="120" height="21"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table; white-space: nowrap; line-height: 1.5; max-width: 120px; text-align: center; width: 120px;"><span class="nodeLabel"><p>主线程执行命令</p></span></div></foreignObject></g></g><g class="node default" id="dg-c1163e25-flowchart-C-3" data-look="neo" transform="translate(184, 215)"><rect class="basic label-container" style="" x="-76" y="-33" width="152" height="66"/><g class="label" style="" transform="translate(-60, -21)"><rect/><foreignObject width="120" height="42"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table; white-space: break-spaces; line-height: 1.5; max-width: 120px; text-align: center; width: 120px;"><span class="nodeLabel"><p>内存 key：过期 / 淘汰</p></span></div></foreignObject></g></g><g class="node default" id="dg-c1163e25-flowchart-D-5" data-look="neo" transform="translate(88, 321)"><rect class="basic label-container" style="" x="-76" y="-33" width="152" height="66"/><g class="label" style="" transform="translate(-60, -21)"><rect/><foreignObject width="120" height="42"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table; white-space: break-spaces; line-height: 1.5; max-width: 120px; text-align: center; width: 120px;"><span class="nodeLabel"><p>持久化：RDB / AOF</p></span></div></foreignObject></g></g><g class="node default" id="dg-c1163e25-flowchart-E-7" data-look="neo" transform="translate(280, 321)"><rect class="basic label-container" style="" x="-76" y="-33" width="152" height="66"/><g class="label" style="" transform="translate(-60, -21)"><rect/><foreignObject width="120" height="42"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table; white-space: break-spaces; line-height: 1.5; max-width: 120px; text-align: center; width: 120px;"><span class="nodeLabel"><p>复制：主节点 / 副本</p></span></div></foreignObject></g></g></g></g></g><defs><filter id="dg-c1163e25-drop-shadow" height="130%" width="130%"><feDropShadow dx="4" dy="4" stdDeviation="0" flood-opacity="0.06" flood-color="#000000"/></filter></defs><defs><filter id="dg-c1163e25-drop-shadow-small" height="150%" width="150%"><feDropShadow dx="2" dy="2" stdDeviation="0" flood-opacity="0.06" flood-color="#000000"/></filter></defs></svg>
+</div>
+        <figcaption>这是机制关系图，持久化与复制按配置工作，各分支不表示客户端收到响应的顺序。</figcaption>
+      </figure>
+
+      <h2 id="data-model">2. 数据模型：按访问方式选类型</h2>
+      <p>key 是二进制安全的字符串，value 有类型。<code>HGET</code> 等类型专用命令要求 value 类型匹配，<code>TTL</code> 等通用命令不受类型限制。冒号分隔的前缀只是命名约定；逻辑数据库也不提供独立的内存配额。Cluster 只支持 DB 0。</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>类型</th><th>表达什么</th><th>典型用法</th><th>代价要看什么</th></tr></thead>
+          <tbody>
+            <tr><td>String</td><td>字节串，可表示整数</td><td><code>GET</code> / <code>SET</code> 做缓存；<code>INCR</code> 做计数</td><td>大 value 即使只查一个 key，也会增加网络传输和客户端处理时间。</td></tr>
+            <tr><td>Hash</td><td>字段到值的映射</td><td><code>HGET</code> / <code>HSET</code> 读写对象字段</td><td><code>HGETALL</code> 要读取整个 Hash，开销随字段数增长。</td></tr>
+            <tr><td>List</td><td>保序、允许重复的序列</td><td><code>LPUSH</code> / <code>RPOP</code> 从两端处理任务</td><td>弹出即移除；如果消费者崩溃，需要额外设计确认和恢复。</td></tr>
+            <tr><td>Set</td><td>无序、去重的成员集合</td><td><code>SISMEMBER</code> 查成员；<code>SINTER</code> 求交集</td><td>集合运算要看参与集合的大小，返回量也可能很大。</td></tr>
+            <tr><td>Sorted Set</td><td>成员唯一，按 score 排序</td><td><code>ZADD</code> / <code>ZRANGE</code> 做排行榜</td><td>限定范围和返回量，避免频繁拉取整榜。</td></tr>
+            <tr><td>Stream</td><td>带 ID 的消息日志</td><td><code>XADD</code> 追加；<code>XREADGROUP</code> 消费；<code>XACK</code> 确认</td><td>设置保留策略，处理未确认消息与重复投递；消费者应能幂等处理。</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Bitmap、HyperLogLog、Geo 分别适合位标记、近似去重计数和地理范围查询。<code>TYPE</code> 看逻辑类型，<code>OBJECT ENCODING</code> 看当前内部编码。例如，小 Hash 可用紧凑的 <code>listpack</code>；超过相应大小限制后可能转成哈希表。估容量时应测代表性数据的实际内存，不能只把 value 的字节数相加。</p>
+      <p><strong>消息机制：</strong>Pub/Sub 把消息送给在线订阅者，最多投递一次，断线后无法补读；Stream 在记录仍保留时可以按 ID 补读，消费组跟踪已投递但未确认的消息。<code>XACK</code> 更新消费组的确认状态，不删除消息本身；重启或切主后的可恢复性仍取决于持久化和复制。</p>
+
+      <h2 id="execution">3. 执行：事件循环、批量请求与原子性</h2>
+      <p>单个 Redis 7.2 节点用事件循环和 I/O 多路复用处理多个连接，数据命令主要由主线程串行执行。<code>io-threads</code> 默认是 <code>1</code>；设得更高可把部分 socket 写交给 I/O 线程，另开 <code>io-threads-do-reads yes</code>（默认关闭）可让它们处理读入和协议解析。网络 I/O 成为瓶颈时才考虑这两个设置，并先压测 CPU 和尾延迟；Redis 7.2 的线程化 I/O 不支持 TLS，也不会并行执行数据命令。慢命令或长脚本占住主线程，其他连接也要等。</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>需求</th><th>机制</th><th>保证与边界</th></tr></thead>
+          <tbody>
+            <tr><td>减少网络往返</td><td>Pipeline</td><td>连续发送一批命令，再读取回复。命令仍分别执行，没有事务隔离；批次太大时服务端要缓存更多回复。</td></tr>
+            <tr><td>一组命令执行期间不被插队</td><td><code>MULTI</code> / <code>EXEC</code></td><td>先入队，再连续执行。入队阶段出错可使整批不执行；执行阶段某条命令出错，其他命令仍会执行，已完成的修改也不会回滚。</td></tr>
+            <tr><td>读取后仅在数据未变时写入</td><td><code>WATCH</code> + 事务</td><td>乐观并发控制：在 <code>EXEC</code> 前，监视的 key 被修改（包括过期或淘汰）就放弃本次事务；客户端按业务需要重试。</td></tr>
+            <tr><td>在服务端完成依赖前一步结果的判断与更新</td><td>Lua（<code>EVAL</code>）或 Redis Functions（7.0 起）</td><td>执行过程中其他命令不插入。脚本要限制循环和数据规模；中途报错不会撤销已经完成的写入。</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2 id="memory">4. 内存：过期、淘汰和实际占用</h2>
+      <p><strong>过期由时间触发。</strong>在 Redis 7.2，TTL 设在整个 key 上；Hash 字段级过期 <code>HEXPIRE</code> 从 7.4 开始支持。主节点访问到过期 key 时会按不存在处理并触发清理，也会主动抽样清理没有被访问的过期 key。到期和内存实际释放可能不在同一时刻。<code>TTL</code> 返回剩余秒数，<code>-1</code> 表示存在但无过期时间，<code>-2</code> 表示 key 不存在。普通 <code>SET</code> 覆盖会移除旧 TTL，除非重新指定过期时间或使用 <code>KEEPTTL</code>。</p>
+      <p><strong>淘汰由内存压力触发。</strong>64 位 Redis 7.2 中 <code>maxmemory</code> 默认 <code>0</code>，即不设这一限制；设置上限后，默认 <code>noeviction</code> 会在内存不足时拒绝需要额外内存的写入。允许淘汰时，<code>allkeys-*</code> 可从所有 key 中选，<code>volatile-*</code> 只从设有 TTL 的 key 中选，后者没有候选时也会拒绝这类写入。LRU 近似按最近访问时间选，LFU 近似按访问频率选，<code>volatile-ttl</code> 优先淘汰剩余有效期较短的 key。只有业务允许 key 提前消失时才适合启用淘汰。</p>
+      <p><strong>容量要看字节和趋势。</strong><code>maxmemory</code> 是淘汰判断的上限，不能当作进程 RSS 或容器内存上限。对同一节点比较 <code>used_memory</code> 与 <code>used_memory_rss</code>，记录差值（字节）及趋势；差值大时再用 <code>allocator_frag_bytes</code> 判断是否主要来自分配器碎片。设置 <code>maxmemory</code> 时还要为复制/AOF 缓冲（<code>mem_not_counted_for_evict</code>）和快照/重写期间的写时复制留空间，最终与主机或容器的内存限制核对。</p>
+
+      <h2 id="persistence">5. 持久化：进程重启能恢复到哪里</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>机制</th><th>启用条件</th><th>写入与恢复</th><th>代价和丢失窗口</th></tr></thead>
+          <tbody>
+            <tr><td>RDB</td><td><code>save</code> 自动快照条件满足，或显式触发快照</td><td>后台快照保存某一时点的内存数据；恢复时加载快照。</td><td>只能恢复到最近一次可用快照所记录的时点。<code>save ""</code> 禁用定时快照；不影响手动快照或复制时生成的快照。</td></tr>
+            <tr><td>AOF</td><td><code>appendonly yes</code>（默认 <code>no</code>）</td><td>记录数据变更，启动时重放。7.0 起由基础文件、增量文件和 manifest 组成；重写生成新的基础文件以压缩历史。</td><td>本地丢失窗口取决于 <code>appendfsync</code>、磁盘状态和故障方式；还要承担写入与重写的资源开销。</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Redis 7.2 默认 <code>save 3600 1 300 100 60 10000</code>；每对值是「距上次保存的秒数、至少发生的变更数」，满足任一组就可触发后台快照。提高快照频率可缩小恢复窗口，但会增加后台操作。<code>appendfsync</code> 默认 <code>everysec</code>，通常约每秒刷盘，异常掉电时约一秒的数据可能丢失，这不是严格上界。<code>always</code> 更频繁地刷盘，适用于能接受较高写延迟、希望缩小丢失窗口的场景；<code>no</code> 交给操作系统决定刷盘时机，丢失窗口更难预估。</p>
+      <p>后台 RDB 快照和 AOF 重写仍有 <code>fork</code> 暂停、写时复制与磁盘 I/O 开销，写入越密集越需要关注峰值。两者都启用时，正常启动优先用 AOF 恢复。需要从误删或整机损坏中恢复时，还要保留独立备份并演练恢复。</p>
+
+      <h2 id="availability">6. 复制、Sentinel 和 Cluster：节点故障后由谁服务</h2>
+      <p>Redis 默认<strong>异步复制</strong>。主节点把变更送入复制流；副本断线重连后通过 <code>PSYNC</code> 提交复制 ID 和偏移，主节点仍认可这段历史且 backlog 覆盖缺口时可增量续传，否则要用 RDB 快照和后续变更做全量同步。副本可能读到旧值，故障转移也可能丢失主节点已确认、但新主节点未收到的写入。<code>WAIT</code> 等待同一连接先前写入的复制确认，应检查返回的副本数量；确认不代表已刷盘，也不提供强一致。7.2 起，启用 AOF 时可用 <code>WAITAOF</code> 等待指定的 AOF 刷盘确认，也要检查返回结果。</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>部署</th><th>数据如何组织</th><th>主节点故障时</th></tr></thead>
+          <tbody>
+            <tr><td>单机</td><td>全部数据由一个节点服务</td><td>等该节点恢复，能恢复多少取决于持久化或上游数据源。</td></tr>
+            <tr><td>主从复制</td><td>一份数据，有一个或多个副本</td><td>只配复制没有自动切主，需外部系统或人工切换。</td></tr>
+            <tr><td>Sentinel</td><td>监控主从复制组，不切分 keyspace</td><td>Sentinel 确认主节点故障，选举后提升副本；客户端通过 Sentinel 发现新主。</td></tr>
+            <tr><td>Cluster</td><td>多个主节点分别管理一组 slot</td><td>满足选举和副本条件时，故障分片的副本可接管其 slot，客户端刷新路由。</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p><strong>Sentinel 的两个门槛：</strong><code>quorum</code> 是判定主节点客观下线所需的同意数；授权执行自动故障转移还需至少获得 Sentinel 的多数票，且不得少于 <code>quorum</code>。这两个门槛分别回答「是否判定故障」与「能否开始切换」。</p>
+      <p><strong>Cluster 的路由：</strong>key 经 CRC16 映射到 16,384 个 slot 之一，再由 slot 找到主节点。原生多 key 命令所涉及的 key 要在同一 slot，可用 hash tag（例如 <code>order:{42}:meta</code> 和 <code>order:{42}:items</code>）显式聚到一起；集中使用同一个 tag 容易造成分片负载倾斜。<code>CROSSSLOT</code> 表示请求涉及不同的 slot，即使它们碰巧归同一个节点也不能直接执行。<code>MOVED</code> 提示客户端更新路由；迁槽期间的 <code>ASK</code> 只为当前请求临时重定向，目标节点先接收 <code>ASKING</code>。</p>
+
+      <h2 id="diagnosis">7. 排查：从现象找到对应机制</h2>
+      <p>先确定请求实际落在哪个数据节点。Cluster 的 <code>INFO</code>、<code>SLOWLOG</code>、<code>SCAN</code> 都是节点视角；复制问题要对照主节点和对应副本。下表命令均在 <code>redis-cli</code> 连接到指定节点后执行。</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>现象</th><th>先看什么</th><th>怎么判断</th></tr></thead>
+          <tbody>
+            <tr><td>key 提前读不到</td><td><code>TTL demo:session</code>；<code>INFO stats</code></td><td>对比同一时间窗口内 <code>expired_keys</code>、<code>evicted_keys</code> 的增量，区分实例是否发生过期或淘汰。<code>TTL=-2</code> 只能证明当前不存在，不能定位该 key 消失的原因。</td></tr>
+            <tr><td>写入报 OOM 或 RSS 上涨</td><td><code>INFO memory</code>；<code>INFO stats</code></td><td>核对 <code>maxmemory</code>、<code>maxmemory_policy</code>、<code>evicted_keys</code> 及 RSS 与分配器指标；把拒绝写入与主机内存压力分开判断。</td></tr>
+            <tr><td>客户端延迟升高</td><td><code>SLOWLOG GET 10</code>；<code>INFO commandstats</code>；<code>INFO stats</code></td><td>把客户端 P99 与慢命令和 <code>instantaneous_ops_per_sec</code> 的变化对齐。SLOWLOG 记录命令实际执行时间，不包含网络、排队等时间；没有慢日志也要看连接池、排队、网络和 <code>fork</code>。</td></tr>
+            <tr><td>重启后缺数据或重启变慢</td><td><code>INFO persistence</code>；启动日志、实例配置、磁盘指标</td><td>用日志核对启动加载的文件，用 <code>INFO</code> 看快照和重写状态，再对照实际 <code>save</code>、<code>appendonly</code>、<code>appendfsync</code> 配置和磁盘耗时。</td></tr>
+            <tr><td>副本读旧值或切主后缺数据</td><td>主节点和副本的 <code>INFO replication</code></td><td>检查副本的 <code>master_link_status</code> 以及同一复制历史下的偏移差；偏移差以字节计，不能直接换算成延迟秒数。</td></tr>
+            <tr><td>Cluster 反复重定向</td><td><code>CLUSTER INFO</code>；<code>CLUSTER SHARDS</code>（7.0 起）</td><td>检查集群状态，把 slot 当前归属与客户端缓存的路由对照，再检查是否正在迁槽或刚切主。</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p><strong>排查大 key 与热 key：</strong>用 <code>redis-cli --bigkeys</code> 按类型找出元素多或值长的 key，再用 <code>MEMORY USAGE demo:session</code> 估算候选 key 的字节数。按前缀查找可在 <code>redis-cli</code> 会话中从 <code>SCAN 0 MATCH demo:* COUNT 100</code> 开始，按返回游标继续，直到游标返回 <code>0</code>。结果可能重复，<code>COUNT</code> 只是提示。热 key 优先从客户端按 key 采样；已使用 LFU 淘汰策略的节点可用 <code>redis-cli --hotkeys</code> 做抽样。指定目标实例的主机和端口；Cluster 按目标分片逐节点执行。全量扫描仍会消耗 CPU 和网络，线上应低峰限速。分享慢日志或扫描结果前先脱敏。</p>
+
+      <h2 id="practice">8. 在测试实例观察 TTL 与事务</h2>
+      <p>在本机隔离的 Redis 7.2 测试单机（默认端口 6379、DB 0）运行 <code>redis-cli</code>，在同一会话依次输入。使用专用演示 key <code>demo:session</code>。</p>
+      <pre><code class="language-plaintext">SET demo:session active EX 60
+TTL demo:session
+SET demo:session renewed
+TTL demo:session
+EXPIRE demo:session 1
+TTL demo:session</code></pre>
+      <p>第一条 <code>TTL</code> 看剩余秒数；第二条应为 <code>-1</code>，说明覆盖值时丢掉了旧 TTL。执行 <code>EXPIRE</code> 后等超过 1 秒再输入最后一条 <code>TTL</code>，预期为 <code>-2</code>。这个实验只需要观察 key 生命周期，不依赖磁盘或副本设置。</p>
+      <p>再用同一个测试实例验证运行期错误：以下命令要在同一个 <code>redis-cli</code> 会话执行。<code>LPUSH</code> 对 String 操作会报 <code>WRONGTYPE</code>，前后的 <code>SET</code> 仍然生效。</p>
+      <pre><code class="language-plaintext">MULTI
+SET demo:txn first
+LPUSH demo:txn item
+SET demo:after yes
+EXEC
+GET demo:txn
+GET demo:after</code></pre>
+      <p>个人实验验证：TTL 的返回语义、覆盖移除 TTL 及事务运行期错误行为，均在隔离的 Redis 7.2.17 单机验证，RDB 和 AOF 均关闭。</p>
+
+      <h2 id="references">官方参考</h2>
+      <ul>
+        <li>数据模型：<a href="https://redis.io/docs/latest/develop/data-types/">数据类型</a>、<a href="https://redis.io/docs/latest/commands/object-encoding/">对象编码</a>、<a href="https://redis.io/docs/latest/develop/pubsub/">Pub/Sub</a>、<a href="https://redis.io/docs/latest/develop/data-types/streams/">Streams</a></li>
+        <li>命令执行：<a href="https://redis.io/docs/latest/management/optimization/latency/">延迟排查</a>、<a href="https://redis.io/docs/latest/develop/using-commands/pipelining/">Pipeline</a>、<a href="https://redis.io/docs/latest/develop/using-commands/transactions/">事务</a>、<a href="https://redis.io/docs/latest/develop/programmability/eval-intro/">Lua 脚本</a></li>
+        <li>内存：<a href="https://redis.io/docs/latest/commands/expire/">EXPIRE</a>、<a href="https://redis.io/docs/latest/commands/hexpire/">Hash 字段过期</a>、<a href="https://redis.io/docs/latest/develop/reference/eviction/">淘汰策略</a>、<a href="https://redis.io/docs/latest/commands/info/">INFO 指标</a></li>
+        <li>恢复与分布式：<a href="https://redis.io/docs/latest/operate/oss_and_stack/management/persistence/">持久化</a>、<a href="https://redis.io/docs/latest/operate/oss_and_stack/management/replication/">复制</a>、<a href="https://redis.io/docs/latest/commands/wait/">WAIT</a>、<a href="https://redis.io/docs/latest/commands/waitaof/">WAITAOF</a>、<a href="https://redis.io/docs/latest/operate/oss_and_stack/management/sentinel/">Sentinel</a>、<a href="https://redis.io/docs/latest/operate/oss_and_stack/reference/cluster-spec/">Cluster 规范</a>、<a href="https://redis.io/docs/latest/commands/cluster-shards/">CLUSTER SHARDS</a></li>
+        <li>配置与工具：<a href="https://raw.githubusercontent.com/redis/redis/7.2/redis.conf">Redis 7.2 示例配置</a>、<a href="https://redis.io/docs/latest/develop/tools/cli/">redis-cli</a>、<a href="https://redis.io/docs/latest/commands/scan/">SCAN</a>、<a href="https://redis.io/docs/latest/commands/slowlog-get/">SLOWLOG GET</a>、<a href="https://redis.io/docs/latest/commands/memory-usage/">MEMORY USAGE</a></li>
+      </ul>
+    </article>
+<!-- shell:bottom:start（同步工具：scripts/site/sync-shell.py） -->
+  </main>
+</div>
+<footer class="site-footer">DBA Playbook · 个人 DBA 知识库与实战手册 · 本地构建，离线可读</footer>
+<script defer src="../../assets/site/nav.js"></script>
+<script defer src="../../assets/site/search-index.js"></script>
+<script defer src="../../assets/site/ui.js"></script>
+<!-- shell:bottom:end -->
+</body>
+</html>

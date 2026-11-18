@@ -1,0 +1,14 @@
+---
+import type { GetStaticPaths } from 'astro';
+import ArticlePage from '../components/ArticlePage.astro';
+import { articles } from '../lib/content';
+
+export const getStaticPaths = (() => articles.map((article) => ({
+  params: { path: article.path.slice(0, -'.html'.length) },
+  props: { article },
+}))) satisfies GetStaticPaths;
+
+const { article } = Astro.props;
+---
+
+<ArticlePage {article} />

@@ -36,3 +36,8 @@ temp/
 _site/
 __pycache__/
 *.pyc
+
+# Astro 发布构建
+node_modules/
+.astro/
+dist/

@@ -1,0 +1,115 @@
+---
+import SiteLayout from '../layouts/SiteLayout.astro';
+import RichText from './RichText.astro';
+import TopicWorkspace from './TopicWorkspace.astro';
+import { directoriesByPath, sectionLabels, statusLabel, topicScope, type ContentArticle } from '../lib/content';
+import { relativeHref } from '../lib/links';
+
+interface Props {
+  article: ContentArticle;
+}
+
+const { article } = Astro.props;
+const { path, section, title, titleId, titleHtml, description, meta, outline } = article;
+const isGeneralKnowledge = path.startsWith('docs/') && section === 'practice';
+const href = (target: string) => relativeHref(path, target);
+const directory = directoriesByPath.get(article.directory);
+const scope = topicScope(path) ?? directory;
+const tags = Array.from(new Set((meta.tags ?? '').split(/[,，]/).map((tag) => tag.trim())))
+  .filter((tag) => tag && tag !== meta.category);
+---
+
+<SiteLayout title={title} description={meta.description || description} section={isGeneralKnowledge ? undefined : section} path={path}>
+  <Fragment slot="head">
+    {Object.entries(meta).filter(([name]) => name !== 'description').map(([name, content]) => (
+      <meta name={name} content={content} />
+    ))}
+    <Fragment set:html={article.headStyles} />
+  </Fragment>
+
+  <Fragment slot="breadcrumbs">
+    <a href={href('index.html')}>首页</a>
+    {scope && <a href={href(scope.path)}>{scope.title}</a>}
+    {directory && directory.path !== scope?.path && <a href={href(directory.path)}>{directory.title}</a>}
+    <span aria-current="page">{title}</span>
+  </Fragment>
+
+  <div class="page-container article-page">
+    <TopicWorkspace {path} {scope}>
+      <div class:list={['article-workspace', { 'has-outline': outline.length > 0 }]}>
+        <article class="reader" data-pagefind-body={article.indexable ? true : undefined} data-pagefind-ignore={article.indexable ? undefined : 'all'}>
+          <header class="reader-heading">
+            <p class="reader-kicker" data-pagefind-filter="section" data-pagefind-meta="section">{isGeneralKnowledge ? '知识' : sectionLabels[section]}</p>
+            <h1 id={titleId} data-pagefind-meta="title" set:html={titleHtml} />
+            {article.indexable && (
+              <div class="article-meta" aria-label="文章信息">
+                {meta.database && <span data-pagefind-filter="database" data-pagefind-meta="database">{meta.database}</span>}
+                {meta.category && <span data-pagefind-filter="category" data-pagefind-meta="category">{meta.category}</span>}
+                {tags.map((tag) => <span>{tag}</span>)}
+                {meta.status && <span class:list={['article-status', { draft: meta.status === 'draft' }]}>{statusLabel(meta.status)}</span>}
+                {meta.date && <time datetime={meta.date}>{meta.date}</time>}
+              </div>
+            )}
+            {article.versionHtml && <RichText html={article.versionHtml} />}
+          </header>
+
+          {outline.length > 0 && (
+            <details class="mobile-article-nav" data-pagefind-ignore>
+              <summary>本文目录</summary>
+              <nav aria-label="本文目录">
+                <ul>
+                  {outline.map((entry) => <li class:list={{ 'subheading': entry.level === 3 }}><a href={`#${entry.id}`}>{entry.title}</a></li>)}
+                </ul>
+              </nav>
+            </details>
+          )}
+
+          <RichText html={article.html} />
+        </article>
+
+        {outline.length > 0 && (
+          <aside class="desktop-outline" data-pagefind-ignore>
+            <nav class="article-sidepanel" aria-label="本文目录">
+              <p class="side-label">本文目录</p>
+              <ul>
+                {outline.map((entry) => <li class:list={{ 'subheading': entry.level === 3 }}><a href={`#${entry.id}`}>{entry.title}</a></li>)}
+              </ul>
+            </nav>
+          </aside>
+        )}
+      </div>
+    </TopicWorkspace>
+  </div>
+</SiteLayout>
+
+<style>
+  .article-page { padding-top: 1.7rem; }
+  .article-workspace.has-outline { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 204px); gap: clamp(1.4rem, 3vw, 2.9rem); }
+  .article-sidepanel { position: sticky; top: calc(var(--site-sticky-height) + 1rem); max-height: calc(100dvh - var(--site-sticky-height) - 2rem); overflow: auto; scrollbar-width: thin; }
+  .side-label { margin: 0 0 .65rem; color: var(--muted); font-size: .75rem; font-weight: 700; letter-spacing: .08em; }
+  .article-sidepanel ul, .mobile-article-nav ul { padding: 0; margin: 0; list-style: none; }
+  .article-sidepanel li a, .mobile-article-nav li a { display: block; padding: .32rem .55rem; color: var(--muted); font-size: .86rem; overflow-wrap: anywhere; }
+  .article-sidepanel li a:hover, .mobile-article-nav li a:hover { color: var(--accent); }
+  .desktop-outline { border-inline-start: 1px solid var(--line); padding-inline-start: 1.05rem; }
+  .subheading { padding-inline-start: .85rem; }
+  .reader { min-width: 0; padding-bottom: 4rem; }
+  .reader-heading { margin-bottom: 1.55rem; }
+  .reader-kicker { margin: 0 0 .45rem; color: var(--accent); font: 650 .78rem/1.4 var(--mono); letter-spacing: .11em; }
+  .reader h1 { margin: 0; font: 750 clamp(1.85rem, 3.5vw, 3rem)/1.22 var(--serif); letter-spacing: -.025em; overflow-wrap: anywhere; }
+  .article-meta { display: flex; flex-wrap: wrap; align-items: center; gap: .45rem; margin-top: .9rem; font-size: .77rem; color: var(--muted); }
+  .article-meta span { padding: .18rem .48rem; border: 1px solid var(--line); border-radius: .35rem; background: var(--surface); }
+  .article-meta .draft { border-color: color-mix(in srgb, var(--accent) 35%, var(--line)); }
+  .article-meta time { margin-inline-start: .15rem; }
+  .reader-heading :global(.content) { margin-top: 1.25rem; }
+  .mobile-article-nav { display: none; margin-bottom: 1.25rem; padding: .55rem .8rem; border: 1px solid var(--line); border-radius: .5rem; background: var(--surface); }
+  .mobile-article-nav summary { cursor: pointer; font-size: .9rem; font-weight: 650; }
+  .mobile-article-nav ul { margin-top: .45rem; }
+  @media (max-width: 1060px) {
+    .article-workspace.has-outline { display: block; }
+    .desktop-outline { display: none; }
+    .mobile-article-nav { display: block; }
+  }
+  @media (max-width: 740px) {
+    .article-page { padding-top: 1rem; }
+  }
+</style>
